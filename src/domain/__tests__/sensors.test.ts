@@ -54,6 +54,16 @@ describe("detectAnomaly", () => {
     expect(result!.currentValue).toBe(150);
   });
 
+  it("returns null when readings are all exactly at baseline (delta = 0)", () => {
+    const readings = [
+      { sensorId: createId<SensorId>("s1"), value: 100, timestamp: "2026-07-15T09:00:00Z" },
+      { sensorId: createId<SensorId>("s1"), value: 100, timestamp: "2026-07-15T10:00:00Z" },
+      { sensorId: createId<SensorId>("s1"), value: 100, timestamp: "2026-07-15T11:00:00Z" },
+    ];
+    const result = detectAnomaly(readings, 100, 10, 20);
+    expect(result).toBeNull();
+  });
+
   it("detects anomaly below baseline", () => {
     const readings = [
       { sensorId: createId<SensorId>("s1"), value: 75, timestamp: "2026-07-15T10:00:00Z" },
@@ -107,6 +117,22 @@ describe("shouldTriggerAlert", () => {
     };
     expect(shouldTriggerAlert(999, noLimits)).toBeNull();
   });
+
+  it("returns warning when value is exactly at warningHigh boundary", () => {
+    expect(shouldTriggerAlert(130, thresholds)).toBe("warning");
+  });
+
+  it("returns critical when value is exactly at criticalHigh boundary", () => {
+    expect(shouldTriggerAlert(150, thresholds)).toBe("critical");
+  });
+
+  it("returns warning when value is exactly at warningLow boundary", () => {
+    expect(shouldTriggerAlert(20, thresholds)).toBe("warning");
+  });
+
+  it("returns critical when value is exactly at criticalLow boundary", () => {
+    expect(shouldTriggerAlert(10, thresholds)).toBe("critical");
+  });
 });
 
 describe("movingAverage", () => {
@@ -131,6 +157,16 @@ describe("movingAverage", () => {
 
   it("returns null for empty array", () => {
     expect(movingAverage([], 5)).toBeNull();
+  });
+
+  it("returns the latest value when window size is 1", () => {
+    const readings = [
+      { sensorId: createId<SensorId>("s1"), value: 10, timestamp: "2026-07-15T01:00:00Z" },
+      { sensorId: createId<SensorId>("s1"), value: 20, timestamp: "2026-07-15T02:00:00Z" },
+      { sensorId: createId<SensorId>("s1"), value: 30, timestamp: "2026-07-15T03:00:00Z" },
+    ];
+    // Window of 1: only the most recent reading (sorted descending by time → value 30)
+    expect(movingAverage(readings, 1)).toBe(30);
   });
 });
 

@@ -1,0 +1,303 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <defs>
+    <pattern id="grid-fine" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e274410" stroke-width="0.5"/>
+    </pattern>
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="#0a0e1a"/>
+  <rect width="800" height="500" fill="url(#grid-fine)"/>
+
+  <!-- Outer perimeter -->
+  <rect x="20" y="20" width="760" height="460" rx="2" fill="none" stroke="#2a3555" stroke-width="2"/>
+  <rect x="30" y="30" width="740" height="440" rx="2" fill="none" stroke="#1e274480" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- ===== SHAFT HEAD FRAME (top-left) ===== -->
+  <rect x="40" y="40" width="150" height="120" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="115" y="58" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">SHAFT HEAD FRAME</text>
+  <!-- Hoist structure -->
+  <g transform="translate(115, 105)">
+    <rect x="-25" y="-20" width="50" height="40" rx="2" fill="none" stroke="#3d5575" stroke-width="1"/>
+    <!-- A-frame -->
+    <line x1="-20" y1="20" x2="0" y2="-25" stroke="#5a7aa0" stroke-width="1.5"/>
+    <line x1="20" y1="20" x2="0" y2="-25" stroke="#5a7aa0" stroke-width="1.5"/>
+    <line x1="-15" y1="5" x2="15" y2="5" stroke="#3d5575" stroke-width="0.8"/>
+    <!-- Sheave wheel -->
+    <circle r="8" cy="-18" fill="none" stroke="#5a7aa0" stroke-width="1"/>
+    <circle r="2" cy="-18" fill="#5a7aa0" opacity="0.4"/>
+  </g>
+  <text x="115" y="140" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">MAIN HOIST</text>
+  <!-- Cables going down -->
+  <line x1="110" y1="125" x2="110" y2="155" stroke="#5a7aa060" stroke-width="1" stroke-dasharray="2 2"/>
+  <line x1="120" y1="125" x2="120" y2="155" stroke="#5a7aa060" stroke-width="1" stroke-dasharray="2 2"/>
+
+  <!-- ===== PROCESSING ROOM (top-center) ===== -->
+  <rect x="200" y="40" width="220" height="140" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="310" y="58" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">PROCESSING ROOM</text>
+  <!-- Conveyor entry -->
+  <line x1="200" y1="80" x2="250" y2="80" stroke="#5a7aa0" stroke-width="1.5"/>
+  <line x1="200" y1="88" x2="250" y2="88" stroke="#5a7aa0" stroke-width="1.5"/>
+  <path d="M215 84 L225 80 L215 76" fill="none" stroke="#00e5ff40" stroke-width="0.8"/>
+  <text x="225" y="100" font-family="monospace" font-size="5" fill="#3d5575" text-anchor="middle">CONV. ENTRY</text>
+  <!-- Crusher area -->
+  <g transform="translate(290, 100)">
+    <circle r="20" fill="none" stroke="#3d5575" stroke-width="1"/>
+    <circle r="7" fill="none" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="-20" y1="0" x2="-7" y2="0" stroke="#3d5575" stroke-width="0.8"/>
+    <line x1="20" y1="0" x2="7" y2="0" stroke="#3d5575" stroke-width="0.8"/>
+    <line x1="0" y1="-20" x2="0" y2="-7" stroke="#3d5575" stroke-width="0.8"/>
+    <line x1="0" y1="20" x2="0" y2="7" stroke="#3d5575" stroke-width="0.8"/>
+  </g>
+  <text x="290" y="130" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">JAW CRUSHER</text>
+  <!-- Ball mill -->
+  <g transform="translate(375, 110)">
+    <ellipse rx="25" ry="15" fill="none" stroke="#3d5575" stroke-width="1"/>
+    <ellipse rx="15" ry="9" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  </g>
+  <text x="375" y="135" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">BALL MILL</text>
+  <!-- Leach tanks -->
+  <circle cx="260" cy="155" r="12" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <circle cx="290" cy="155" r="12" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <text x="275" y="172" font-family="monospace" font-size="5" fill="#3d5575" text-anchor="middle">LEACH TANKS</text>
+
+  <!-- ===== GOLD ROOM (top-right, SECURE) ===== -->
+  <rect x="430" y="40" width="120" height="100" rx="1" fill="#ffd60008" stroke="#ffd600" stroke-width="1.5" filter="url(#glow-amber)"/>
+  <text x="490" y="58" font-family="monospace" font-size="9" fill="#ffd600" text-anchor="middle" font-weight="bold">GOLD ROOM</text>
+  <text x="490" y="68" font-family="monospace" font-size="5" fill="#ffd60080" text-anchor="middle">[RESTRICTED ACCESS]</text>
+  <!-- Smelting furnace -->
+  <rect x="445" y="80" width="35" height="25" rx="2" fill="none" stroke="#ffd60060" stroke-width="0.8"/>
+  <text x="462" y="97" font-family="monospace" font-size="5" fill="#ffd60060" text-anchor="middle">SMELT</text>
+  <!-- Safe -->
+  <rect x="500" y="80" width="30" height="25" rx="1" fill="none" stroke="#ffd60060" stroke-width="1"/>
+  <rect x="500" y="80" width="30" height="25" rx="1" fill="#ffd60008" stroke="none"/>
+  <text x="515" y="97" font-family="monospace" font-size="5" fill="#ffd60060" text-anchor="middle">VAULT</text>
+  <!-- Assay balance -->
+  <rect x="450" y="112" width="25" height="15" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <text x="462" y="123" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">BALANCE</text>
+
+  <!-- ===== LABORATORY (right of gold room) ===== -->
+  <rect x="560" y="40" width="110" height="100" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="615" y="58" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">LABORATORY</text>
+  <!-- Lab benches -->
+  <rect x="570" y="70" width="40" height="8" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <rect x="570" y="85" width="40" height="8" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <rect x="620" y="70" width="40" height="8" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <!-- Instruments -->
+  <rect x="625" y="90" width="12" height="10" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <text x="631" y="98" font-family="monospace" font-size="3.5" fill="#3d5575" text-anchor="middle">XRF</text>
+  <rect x="645" y="90" width="12" height="10" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <text x="651" y="98" font-family="monospace" font-size="3.5" fill="#3d5575" text-anchor="middle">ICP</text>
+  <!-- Fume hood -->
+  <rect x="575" y="105" width="30" height="12" rx="1" fill="none" stroke="#22c55e40" stroke-width="0.6"/>
+  <text x="590" y="114" font-family="monospace" font-size="4" fill="#22c55e60" text-anchor="middle">FUME HOOD</text>
+
+  <!-- ===== CONTROL ROOM (center-right) ===== -->
+  <rect x="560" y="150" width="110" height="90" rx="1" fill="#00e5ff10" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="615" y="168" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">CONTROL ROOM</text>
+  <!-- Console desks -->
+  <rect x="570" y="180" width="45" height="8" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <rect x="570" y="195" width="45" height="8" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <!-- Monitors -->
+  <rect x="573" y="181" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <rect x="583" y="181" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <rect x="593" y="181" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <rect x="603" y="181" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <!-- Server rack -->
+  <rect x="635" y="175" width="20" height="40" rx="1" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <line x1="635" y1="183" x2="655" y2="183" stroke="#3d5575" stroke-width="0.3"/>
+  <line x1="635" y1="191" x2="655" y2="191" stroke="#3d5575" stroke-width="0.3"/>
+  <line x1="635" y1="199" x2="655" y2="199" stroke="#3d5575" stroke-width="0.3"/>
+  <line x1="635" y1="207" x2="655" y2="207" stroke="#3d5575" stroke-width="0.3"/>
+
+  <!-- ===== WORKSHOP (center-left) ===== -->
+  <rect x="40" y="170" width="150" height="100" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="115" y="188" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">WORKSHOP</text>
+  <!-- Workbenches -->
+  <rect x="55" y="200" width="50" height="10" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <rect x="55" y="220" width="50" height="10" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <!-- Lathe -->
+  <rect x="120" y="200" width="30" height="20" rx="1" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <text x="135" y="214" font-family="monospace" font-size="5" fill="#3d5575" text-anchor="middle">LATHE</text>
+  <!-- Welding bay -->
+  <rect x="120" y="235" width="30" height="20" rx="1" fill="none" stroke="#ffd60040" stroke-width="0.6"/>
+  <text x="135" y="249" font-family="monospace" font-size="5" fill="#ffd60060" text-anchor="middle">WELD</text>
+  <!-- Tool storage -->
+  <rect x="55" y="240" width="25" height="20" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <text x="67" y="254" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">TOOLS</text>
+
+  <!-- ===== STORAGE (bottom-left) ===== -->
+  <rect x="40" y="310" width="150" height="80" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="115" y="328" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">STORAGE</text>
+  <!-- Shelving units -->
+  <rect x="55" y="340" width="55" height="6" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="55" y="350" width="55" height="6" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="55" y="360" width="55" height="6" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="55" y="370" width="55" height="6" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <!-- Explosives store (separate) -->
+  <rect x="130" y="340" width="45" height="35" rx="1" fill="#ff444410" stroke="#ff444480" stroke-width="0.8"/>
+  <text x="152" y="355" font-family="monospace" font-size="5" fill="#ff444480" text-anchor="middle">EXPLOSIVES</text>
+  <text x="152" y="365" font-family="monospace" font-size="4" fill="#ff444060" text-anchor="middle">[SECURED]</text>
+
+  <!-- ===== CHANGE ROOMS (bottom-center) ===== -->
+  <rect x="200" y="310" width="140" height="80" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="270" y="328" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">CHANGE ROOMS</text>
+  <!-- Lockers -->
+  <rect x="210" y="340" width="55" height="15" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="210" y="360" width="55" height="15" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <text x="237" y="350" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">LOCKERS</text>
+  <!-- Showers -->
+  <rect x="280" y="340" width="40" height="35" rx="1" fill="none" stroke="#00e5ff20" stroke-width="0.5"/>
+  <text x="300" y="362" font-family="monospace" font-size="5" fill="#3d5575" text-anchor="middle">SHOWERS</text>
+
+  <!-- ===== OFFICES (bottom-right) ===== -->
+  <rect x="430" y="260" width="120" height="80" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="490" y="278" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">OFFICES</text>
+  <!-- Room divider -->
+  <line x1="490" y1="260" x2="490" y2="340" stroke="#2a3555" stroke-width="1"/>
+  <!-- Desks -->
+  <rect x="440" y="290" width="20" height="12" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="440" y="310" width="20" height="12" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="465" y="290" width="20" height="12" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <!-- Meeting room -->
+  <text x="525" y="290" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">MEETING</text>
+  <rect x="500" y="300" width="35" height="18" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+
+  <!-- ===== FIRST AID / EMERGENCY (right side) ===== -->
+  <rect x="560" y="260" width="110" height="80" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="615" y="278" font-family="monospace" font-size="8" fill="#5a7aa0" text-anchor="middle">FIRST AID</text>
+  <!-- Medical cross -->
+  <g transform="translate(615, 310)">
+    <rect x="-3" y="-10" width="6" height="20" rx="1" fill="#22c55e40"/>
+    <rect x="-10" y="-3" width="20" height="6" rx="1" fill="#22c55e40"/>
+  </g>
+  <!-- Stretcher -->
+  <rect x="575" y="295" width="25" height="6" rx="1" fill="none" stroke="#22c55e30" stroke-width="0.5"/>
+
+  <!-- ===== VENTILATION SHAFT (center area) ===== -->
+  <g transform="translate(370, 225)">
+    <circle r="18" fill="none" stroke="#5a7aa0" stroke-width="1"/>
+    <circle r="10" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+    <circle r="3" fill="#3d5575" opacity="0.3"/>
+    <!-- Fan blades -->
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#3d557560" stroke-width="0.5"/>
+    <line x1="-18" y1="0" x2="18" y2="0" stroke="#3d557560" stroke-width="0.5"/>
+    <line x1="-13" y1="-13" x2="13" y2="13" stroke="#3d557560" stroke-width="0.5"/>
+    <line x1="13" y1="-13" x2="-13" y2="13" stroke="#3d557560" stroke-width="0.5"/>
+  </g>
+  <text x="370" y="252" font-family="monospace" font-size="6" fill="#5a7aa0" text-anchor="middle">VENT SHAFT</text>
+
+  <!-- ===== CORRIDORS ===== -->
+  <!-- Main corridor (horizontal) -->
+  <rect x="40" y="278" width="510" height="25" rx="0" fill="#0d1525" stroke="#1e274480" stroke-width="0.5"/>
+  <text x="295" y="295" font-family="monospace" font-size="6" fill="#2a3555" text-anchor="middle" letter-spacing="3">MAIN CORRIDOR</text>
+  <!-- Vertical corridor (connecting shaft to lower areas) -->
+  <rect x="190" y="160" width="25" height="120" rx="0" fill="#0d1525" stroke="#1e274480" stroke-width="0.5"/>
+  <!-- Right service corridor -->
+  <rect x="680" y="40" width="25" height="420" rx="0" fill="#0d1525" stroke="#1e274480" stroke-width="0.5"/>
+  <text x="692" y="250" font-family="monospace" font-size="6" fill="#2a3555" text-anchor="middle" transform="rotate(90, 692, 250)" letter-spacing="2">SERVICE CORRIDOR</text>
+
+  <!-- ===== ENTRY GATE (bottom) ===== -->
+  <rect x="350" y="400" width="100" height="60" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="400" y="420" font-family="monospace" font-size="8" fill="#5a7aa0" text-anchor="middle">MUSTER POINT</text>
+  <rect x="370" y="470" width="60" height="3" fill="#00e5ff" opacity="0.6"/>
+  <text x="400" y="490" font-family="monospace" font-size="7" fill="#5a7aa0" text-anchor="middle">MAIN GATE</text>
+  <!-- Gate posts -->
+  <rect x="372" y="466" width="4" height="10" fill="#2a3555"/>
+  <rect x="424" y="466" width="4" height="10" fill="#2a3555"/>
+
+  <!-- ===== DOOR SYMBOLS ===== -->
+  <line x1="310" y1="278" x2="340" y2="278" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="205" y1="303" x2="205" y2="325" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="440" y1="278" x2="460" y2="278" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="670" y1="180" x2="670" y2="200" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="670" y1="80" x2="670" y2="100" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="670" y1="290" x2="670" y2="310" stroke="#00e5ff40" stroke-width="2"/>
+
+  <!-- ===== CAMERA SYMBOLS ===== -->
+  <g transform="translate(50, 50)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM1</text>
+  </g>
+  <g transform="translate(210, 50)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM2</text>
+  </g>
+  <g transform="translate(440, 50)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM3</text>
+  </g>
+  <g transform="translate(400, 410)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM4</text>
+  </g>
+
+  <!-- ===== FIRE EXTINGUISHERS ===== -->
+  <g transform="translate(50, 278)">
+    <rect x="-2" y="-3" width="4" height="6" rx="1" fill="#ff4444" opacity="0.3"/>
+    <text x="5" y="2" font-family="monospace" font-size="3.5" fill="#ff444460">FE</text>
+  </g>
+  <g transform="translate(540, 278)">
+    <rect x="-2" y="-3" width="4" height="6" rx="1" fill="#ff4444" opacity="0.3"/>
+    <text x="5" y="2" font-family="monospace" font-size="3.5" fill="#ff444460">FE</text>
+  </g>
+
+  <!-- ===== ELECTRICAL PANELS ===== -->
+  <g transform="translate(195, 165)">
+    <rect x="-4" y="-5" width="8" height="10" rx="0.5" fill="none" stroke="#ffd600" stroke-width="0.6" opacity="0.5"/>
+    <path d="M-1,-3 L1,0 L-1,3" stroke="#ffd600" stroke-width="0.5" fill="none" opacity="0.5"/>
+    <text x="6" y="2" font-family="monospace" font-size="3.5" fill="#ffd60060">EP</text>
+  </g>
+
+  <!-- ===== EMERGENCY EXITS ===== -->
+  <g transform="translate(680, 450)">
+    <rect x="-6" y="-4" width="12" height="8" rx="1" fill="#22c55e20" stroke="#22c55e" stroke-width="0.5" opacity="0.5"/>
+    <text x="0" y="2" font-family="monospace" font-size="4" fill="#22c55e80" text-anchor="middle">EXIT</text>
+  </g>
+  <g transform="translate(40, 385)">
+    <rect x="-6" y="-4" width="12" height="8" rx="1" fill="#22c55e20" stroke="#22c55e" stroke-width="0.5" opacity="0.5"/>
+    <text x="0" y="2" font-family="monospace" font-size="4" fill="#22c55e80" text-anchor="middle">EXIT</text>
+  </g>
+
+  <!-- ===== PIPE RUNS ===== -->
+  <!-- Slurry pipe from processing to gold room -->
+  <path d="M420 100 L430 100" stroke="#ffd60030" stroke-width="2" fill="none" stroke-dasharray="4 2"/>
+  <!-- Water pipe from shaft -->
+  <path d="M190 130 L200 130 L200 80" stroke="#00e5ff20" stroke-width="2" fill="none" stroke-dasharray="6 3"/>
+  <!-- Ventilation duct -->
+  <path d="M370 207 L370 180 L430 180 L430 140" stroke="#5a7aa030" stroke-width="3" fill="none" stroke-dasharray="8 4"/>
+
+  <!-- ===== NORTH ARROW ===== -->
+  <g transform="translate(740, 55)">
+    <polygon points="0,-18 -6,0 0,-8 6,0" fill="#5a7aa0" opacity="0.7"/>
+    <line x1="0" y1="0" x2="0" y2="10" stroke="#5a7aa0" stroke-width="1" opacity="0.5"/>
+    <text x="0" y="-22" font-family="monospace" font-size="8" fill="#5a7aa0" text-anchor="middle" font-weight="bold">N</text>
+  </g>
+
+  <!-- ===== SCALE BAR ===== -->
+  <g transform="translate(680, 470)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="0" y1="-3" x2="0" y2="3" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="60" y1="-3" x2="60" y2="3" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="30" y1="-2" x2="30" y2="2" stroke="#5a7aa0" stroke-width="0.5"/>
+    <text x="30" y="12" font-family="monospace" font-size="6" fill="#5a7aa0" text-anchor="middle">10m</text>
+  </g>
+
+  <!-- ===== TITLE BLOCK ===== -->
+  <g transform="translate(40, 470)">
+    <text font-family="monospace" font-size="7" fill="#3d5575">KALGOORLIE GOLD MINE</text>
+    <text y="10" font-family="monospace" font-size="5" fill="#2a3555">DWG: KGM-FP-001 REV.1 | SCALE 1:200 | MERIDIAN MINING SERVICES</text>
+  </g>
+</svg>

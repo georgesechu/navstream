@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
+import { useLiveAlertCount } from "@/hooks/use-live-alert-count";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe,
@@ -17,6 +18,7 @@ import {
   Bell,
   Users,
   BarChart3,
+  Smartphone,
 } from "lucide-react";
 import { NavStreamWordmark } from "@/components/ui/logo";
 import Link from "next/link";
@@ -71,6 +73,12 @@ const navItems = [
     href: "/analytics",
     accent: "cyan",
   },
+  {
+    label: "Devices",
+    icon: Smartphone,
+    href: "/devices",
+    accent: "green",
+  },
 ] as const;
 
 const bottomItems = [
@@ -99,6 +107,7 @@ const activeAccentColors: Record<string, string> = {
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
   const pathname = usePathname();
+  const { count: alertCount, hasNewAlert } = useLiveAlertCount();
 
   return (
     <motion.aside
@@ -182,6 +191,7 @@ export function Sidebar() {
       <div className="flex flex-col gap-0.5 px-2 py-2 border-t border-[var(--nav-border)]">
         {bottomItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
+          const isAlerts = item.href === "/alerts";
           return (
             <Link
               key={item.href}
@@ -189,19 +199,39 @@ export function Sidebar() {
               data-testid={`sidebar-nav-${item.href.slice(1)}`}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-150",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-150",
                 "hover:bg-[var(--nav-bg-hover)]",
                 isActive && "bg-[var(--nav-bg-hover)]"
               )}
             >
-              <item.icon
-                className={cn(
-                  "w-4.5 h-4.5 flex-shrink-0 transition-colors",
-                  isActive
-                    ? "text-[var(--nav-text-primary)]"
-                    : "text-[var(--nav-text-muted)] group-hover:text-[var(--nav-text-secondary)]"
+              <div className="relative flex-shrink-0">
+                <item.icon
+                  className={cn(
+                    "w-4.5 h-4.5 transition-colors",
+                    isActive
+                      ? "text-[var(--nav-text-primary)]"
+                      : "text-[var(--nav-text-muted)] group-hover:text-[var(--nav-text-secondary)]"
+                  )}
+                />
+                {/* Alert count badge on icon */}
+                {isAlerts && alertCount > 0 && sidebarCollapsed && (
+                  <motion.span
+                    key={alertCount}
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: hasNewAlert ? [1, 1.3, 1] : 1 }}
+                    transition={{ duration: 0.3 }}
+                    data-testid="sidebar-alert-badge"
+                    className={cn(
+                      "absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full",
+                      "bg-red text-white text-[10px] font-bold flex items-center justify-center",
+                      "shadow-[0_0_8px_rgba(255,23,68,0.5)]",
+                      hasNewAlert && "animate-pulse"
+                    )}
+                  >
+                    {alertCount > 99 ? "99+" : alertCount}
+                  </motion.span>
                 )}
-              />
+              </div>
               <AnimatePresence>
                 {!sidebarCollapsed && (
                   <motion.span
@@ -209,7 +239,7 @@ export function Sidebar() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className={cn(
-                      "text-sm truncate transition-colors",
+                      "text-sm truncate transition-colors flex-1",
                       isActive
                         ? "text-[var(--nav-text-primary)]"
                         : "text-[var(--nav-text-secondary)] group-hover:text-[var(--nav-text-primary)]"
@@ -219,6 +249,24 @@ export function Sidebar() {
                   </motion.span>
                 )}
               </AnimatePresence>
+              {/* Alert count badge next to label (expanded sidebar) */}
+              {isAlerts && alertCount > 0 && !sidebarCollapsed && (
+                <motion.span
+                  key={alertCount}
+                  initial={{ scale: 0.5 }}
+                  animate={{ scale: hasNewAlert ? [1, 1.3, 1] : 1 }}
+                  transition={{ duration: 0.3 }}
+                  data-testid="sidebar-alert-badge"
+                  className={cn(
+                    "min-w-[20px] h-5 px-1.5 rounded-full",
+                    "bg-red text-white text-[10px] font-bold flex items-center justify-center",
+                    "shadow-[0_0_8px_rgba(255,23,68,0.5)]",
+                    hasNewAlert && "animate-pulse"
+                  )}
+                >
+                  {alertCount > 99 ? "99+" : alertCount}
+                </motion.span>
+              )}
             </Link>
           );
         })}

@@ -19,6 +19,7 @@ import {
   MapPin,
   ArrowRight,
   Command,
+  Smartphone,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -54,6 +55,7 @@ export function CommandPalette() {
     { id: "nav-alerts", label: "Alerts", icon: Bell, href: "/alerts", category: "Navigation", accent: "amber" },
     { id: "nav-team", label: "Team", icon: Users, href: "/team", category: "Navigation", accent: "cyan" },
     { id: "nav-settings", label: "Settings", icon: Settings, href: "/settings", category: "Navigation", accent: "cyan" },
+    { id: "nav-devices", label: "Field Devices", icon: Smartphone, href: "/devices", category: "Navigation", accent: "green" },
     // Sites
     ...sites.map((site) => ({
       id: `site-${site.id}`,

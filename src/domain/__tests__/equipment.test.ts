@@ -24,6 +24,20 @@ describe("computeUptime", () => {
   it("rounds to one decimal place", () => {
     expect(computeUptime(1000, 7)).toBe(99.3);
   });
+
+  it("handles negative downtime (clamps above 100% or returns >100)", () => {
+    // When downtime is negative (edge case / bad data), the formula produces > 100%
+    const result = computeUptime(100, -10);
+    // (100 - (-10)) / 100 * 100 = 110%
+    expect(result).toBe(110);
+  });
+
+  it("handles downtime exceeding total hours", () => {
+    // Edge case: more downtime than total hours
+    const result = computeUptime(100, 150);
+    // (100 - 150) / 100 * 100 = -50%
+    expect(result).toBe(-50);
+  });
 });
 
 describe("deriveEquipmentStatus", () => {
@@ -60,6 +74,24 @@ describe("deriveEquipmentStatus", () => {
   it("preserves maintenance status when no alerts", () => {
     const equip = createMockEquipment({ id: createId<EquipmentId>("e1"), status: "maintenance" });
     expect(deriveEquipmentStatus(equip, [])).toBe("maintenance");
+  });
+
+  it("returns failed when both critical and warning alerts are active (critical wins)", () => {
+    const equip = createMockEquipment({ id: createId<EquipmentId>("e1") });
+    const alerts = [
+      createMockAlert({ equipmentId: createId<EquipmentId>("e1"), severity: "warning", status: "active" }),
+      createMockAlert({ equipmentId: createId<EquipmentId>("e1"), severity: "critical", status: "active" }),
+    ];
+    expect(deriveEquipmentStatus(equip, alerts)).toBe("failed");
+  });
+
+  it("ignores alerts for different equipment", () => {
+    const equip = createMockEquipment({ id: createId<EquipmentId>("e1") });
+    const alerts = [
+      createMockAlert({ equipmentId: createId<EquipmentId>("e2"), severity: "critical", status: "active" }),
+      createMockAlert({ equipmentId: createId<EquipmentId>("e3"), severity: "warning", status: "active" }),
+    ];
+    expect(deriveEquipmentStatus(equip, alerts)).toBe("operational");
   });
 });
 

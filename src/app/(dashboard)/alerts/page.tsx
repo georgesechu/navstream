@@ -252,6 +252,23 @@ export default function AlertsPage() {
 
         {/* Alerts list */}
         <div data-testid="alerts-list" className="space-y-3">
+          {filtered.length === 0 && (
+            <div data-testid="alerts-empty-state" className="flex flex-col items-center justify-center py-16 gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[var(--nav-bg-tertiary)] border border-[var(--nav-border)] flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-[var(--nav-text-muted)]" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-[var(--nav-text-secondary)]">
+                  No alerts match this filter
+                </p>
+                <p className="text-xs text-[var(--nav-text-muted)] mt-1">
+                  {filter === "all"
+                    ? "There are no alerts in the system right now."
+                    : `No ${filter} alerts found. Try a different filter.`}
+                </p>
+              </div>
+            </div>
+          )}
           {filtered.map((alert, i) => {
             const severity = severityConfig[alert.severity];
             const SeverityIcon = severity.icon;

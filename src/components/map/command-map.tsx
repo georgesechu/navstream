@@ -2,6 +2,7 @@
 
 import { type Site } from "@/stores/app-store";
 import { useSites } from "@/hooks/use-sites";
+import { useLiveSensors } from "@/hooks/use-live-sensors";
 import { WorldMap } from "./world-map";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,11 +13,12 @@ import {
   ArrowUpRight,
   Activity,
   Zap,
+  Radio,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const statusConfig = {
   online: {
@@ -49,9 +51,14 @@ const statusConfig = {
   },
 };
 
-function SiteCard({ site, index }: { site: Site; index: number }) {
+function SiteCard({ site, index, liveAlertCount }: { site: Site; index: number; liveAlertCount?: number }) {
   const [hovered, setHovered] = useState(false);
-  const status = statusConfig[site.status];
+  // Override status if live alerts indicate worse condition
+  const effectiveStatus = liveAlertCount !== undefined && liveAlertCount > 0
+    ? (site.status === "critical" ? "critical" : "warning")
+    : site.status;
+  const status = statusConfig[effectiveStatus];
+  const displayAlerts = liveAlertCount !== undefined ? liveAlertCount : site.activeAlerts;
 
   return (
     <motion.div
@@ -76,10 +83,11 @@ function SiteCard({ site, index }: { site: Site; index: number }) {
             <div className="flex items-center gap-2.5">
               <div
                 className={cn(
-                  "w-2.5 h-2.5 rounded-full",
+                  "w-2.5 h-2.5 rounded-full transition-colors duration-500",
                   status.color,
                   status.glow,
-                  site.status === "online" && "status-online"
+                  effectiveStatus === "online" && "status-online",
+                  effectiveStatus === "critical" && "animate-pulse"
                 )}
               />
               <div>
@@ -114,13 +122,19 @@ function SiteCard({ site, index }: { site: Site; index: number }) {
                 {site.personnelCount}
               </span>
             </div>
-            {site.activeAlerts > 0 && (
-              <div className="flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber" />
-                <span className="text-xs font-mono text-amber">
-                  {site.activeAlerts}
+            {displayAlerts > 0 && (
+              <motion.div
+                key={displayAlerts}
+                initial={{ scale: 1 }}
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.3 }}
+                className="flex items-center gap-1.5"
+              >
+                <AlertTriangle className={cn("w-3.5 h-3.5", effectiveStatus === "critical" ? "text-red" : "text-amber")} />
+                <span className={cn("text-xs font-mono", effectiveStatus === "critical" ? "text-red" : "text-amber")}>
+                  {displayAlerts}
                 </span>
-              </div>
+              </motion.div>
             )}
           </div>
 
@@ -141,12 +155,13 @@ function SiteCard({ site, index }: { site: Site; index: number }) {
   );
 }
 
-function StatsBar({ sites }: { sites: Site[] }) {
+function StatsBar({ sites, liveAlertCount }: { sites: Site[]; liveAlertCount?: number }) {
 
   const online = sites.filter((s) => s.status === "online").length;
   const warning = sites.filter((s) => s.status === "warning").length;
   const critical = sites.filter((s) => s.status === "critical").length;
   const totalPersonnel = sites.reduce((a, s) => a + s.personnelCount, 0);
+  const totalAlerts = liveAlertCount ?? sites.reduce((a, s) => a + s.activeAlerts, 0);
   const avgUptime =
     sites.length > 0
       ? (sites.reduce((a, s) => a + s.uptime, 0) / sites.length).toFixed(1)
@@ -167,10 +182,10 @@ function StatsBar({ sites }: { sites: Site[] }) {
       color: "text-amber",
     },
     {
-      label: "Critical",
-      value: critical,
+      label: "Active Alerts",
+      value: totalAlerts,
       icon: AlertTriangle,
-      color: "text-red",
+      color: totalAlerts > 0 ? "text-red" : "text-cyan-dim",
     },
     {
       label: "Personnel",
@@ -199,9 +214,15 @@ function StatsBar({ sites }: { sites: Site[] }) {
         >
           <stat.icon className={cn("w-4 h-4", stat.color)} />
           <div>
-            <p className="text-lg font-semibold font-mono text-[var(--nav-text-primary)] leading-none">
+            <motion.p
+              key={`${stat.label}-${stat.value}`}
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.15, 1] }}
+              transition={{ duration: 0.3 }}
+              className="text-lg font-semibold font-mono text-[var(--nav-text-primary)] leading-none"
+            >
               {stat.value}
-            </p>
+            </motion.p>
             <p className="text-[10px] text-[var(--nav-text-muted)] uppercase tracking-wider mt-0.5">
               {stat.label}
             </p>
@@ -214,7 +235,36 @@ function StatsBar({ sites }: { sites: Site[] }) {
 
 export function CommandMap() {
   const { sites, isLoading } = useSites();
+  const { alerts: liveAlerts, isConnected: isLiveConnected } = useLiveSensors();
   const router = useRouter();
+
+  // Compute per-site live alert counts from SSE alerts
+  const siteAlertCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const alert of liveAlerts) {
+      counts.set(alert.siteId, (counts.get(alert.siteId) ?? 0) + 1);
+    }
+    return counts;
+  }, [liveAlerts]);
+
+  const totalLiveAlerts = liveAlerts.length;
+
+  // Override site statuses with live alert data
+  const liveSites = useMemo(() => {
+    return sites.map((site) => {
+      const liveCount = siteAlertCounts.get(site.id) ?? 0;
+      if (liveCount === 0) return site;
+      // Check if any live alert for this site is critical
+      const hasCritical = liveAlerts.some(
+        (a) => a.siteId === site.id && a.severity === "critical"
+      );
+      const newStatus = hasCritical ? "critical" : "warning";
+      // Only escalate, never downgrade
+      if (site.status === "critical") return site;
+      if (site.status === "warning" && newStatus !== "critical") return site;
+      return { ...site, status: newStatus as Site["status"] };
+    });
+  }, [sites, siteAlertCounts, liveAlerts]);
 
   if (isLoading) {
     return (
@@ -238,7 +288,17 @@ export function CommandMap() {
             Global facility overview &middot; Real-time monitoring
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Live connection indicator */}
+          <div
+            data-testid="command-map-live-indicator"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--nav-bg-secondary)] border border-[var(--nav-border)]"
+          >
+            <Radio className={cn("w-3.5 h-3.5", isLiveConnected ? "text-green animate-pulse" : "text-[var(--nav-text-muted)]")} />
+            <span className={cn("text-[10px] font-mono uppercase tracking-wider font-medium", isLiveConnected ? "text-green" : "text-[var(--nav-text-muted)]")}>
+              {isLiveConnected ? "Live" : "Offline"}
+            </span>
+          </div>
           <button className="px-3 py-1.5 rounded-lg bg-cyan/10 text-cyan text-xs font-medium border border-cyan/20 hover:bg-cyan/20 transition-colors">
             + Add Site
           </button>
@@ -246,7 +306,7 @@ export function CommandMap() {
       </div>
 
       {/* Stats bar */}
-      <StatsBar sites={sites} />
+      <StatsBar sites={liveSites} liveAlertCount={totalLiveAlerts > 0 ? totalLiveAlerts : undefined} />
 
       {/* Map placeholder + site grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-1">
@@ -254,16 +314,16 @@ export function CommandMap() {
         <div data-testid="command-map-viewport" className="xl:col-span-2 relative rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)] overflow-hidden min-h-[400px]">
           {/* Interactive world map */}
           <WorldMap
-            sites={sites}
+            sites={liveSites}
             onSiteClick={(siteId) => router.push(`/sites/${siteId}`)}
             className="absolute inset-0"
           />
 
           {/* Corner decorations */}
           <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--nav-bg-primary)]/80 backdrop-blur-sm border border-[var(--nav-border)] z-10">
-            <div className="w-1.5 h-1.5 rounded-full bg-green status-online" />
+            <div className={cn("w-1.5 h-1.5 rounded-full", isLiveConnected ? "bg-green status-online" : "bg-[var(--nav-text-muted)]")} />
             <span className="text-[10px] font-mono text-[var(--nav-text-muted)]">
-              LIVE VIEW
+              {isLiveConnected ? "LIVE VIEW" : "CONNECTING..."}
             </span>
           </div>
         </div>
@@ -271,10 +331,15 @@ export function CommandMap() {
         {/* Site cards list */}
         <div className="flex flex-col gap-3 overflow-y-auto max-h-[600px] xl:max-h-none">
           <h2 className="text-xs font-semibold text-[var(--nav-text-muted)] uppercase tracking-wider px-1">
-            Facilities ({sites.length})
+            Facilities ({liveSites.length})
           </h2>
-          {sites.map((site, i) => (
-            <SiteCard key={site.id} site={site} index={i} />
+          {liveSites.map((site, i) => (
+            <SiteCard
+              key={site.id}
+              site={site}
+              index={i}
+              liveAlertCount={siteAlertCounts.get(site.id)}
+            />
           ))}
         </div>
       </div>

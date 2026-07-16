@@ -34,6 +34,7 @@ import { useSearchParams } from "next/navigation";
 import { useTeam, type CommsContact } from "@/hooks/use-team";
 import { useWorkOrders } from "@/hooks/use-work-orders";
 import { useFetch } from "@/hooks/use-fetch";
+import { VideoCall } from "@/components/comms/video-call";
 
 /** Minimal equipment shape returned by /api/equipment/[id]. */
 interface EquipmentContext {
@@ -71,6 +72,8 @@ function CommsPageContent() {
     "contacts"
   );
   const [activeContact, setActiveContact] = useState<CommsContact | null>(null);
+  const [callRoomId, setCallRoomId] = useState<string | null>(null);
+  const [isCallInitiator, setIsCallInitiator] = useState(true);
 
   // Fetch contacts and sessions from API
   const { contacts, onlineCount, siteTeamCount, isLoading: contactsLoading } =
@@ -87,32 +90,67 @@ function CommsPageContent() {
   );
   const showEquipmentContext = equipmentIdParam && equipmentContext && !("error" in equipmentContext);
 
-  const handleStartCall = useCallback(
-    (contact: CommsContact) => {
-      setActiveContact(contact);
-      setInCall(true);
+  const createCallRoom = useCallback(
+    async (contact: CommsContact) => {
+      try {
+        const res = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            callerId: "back-office",
+            calleeId: contact.id,
+          }),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.roomId as string;
+      } catch {
+        return null;
+      }
     },
     []
+  );
+
+  const handleStartCall = useCallback(
+    async (contact: CommsContact) => {
+      setActiveContact(contact);
+      const roomId = await createCallRoom(contact);
+      if (roomId) {
+        setCallRoomId(roomId);
+        setIsCallInitiator(true);
+        setInCall(true);
+      } else {
+        // Fallback — still show the call UI with mock
+        setInCall(true);
+      }
+    },
+    [createCallRoom]
   );
 
   const handleEndCall = useCallback(() => {
     setInCall(false);
     setActiveContact(null);
+    setCallRoomId(null);
   }, []);
 
-  const handleQuickCall = useCallback(() => {
+  const handleQuickCall = useCallback(async () => {
     if (!inCall) {
       // Start call with first online contact, or first contact
       const target =
         contacts.find((c) => c.status === "online") ?? contacts[0] ?? null;
       if (target) {
         setActiveContact(target);
+        const roomId = await createCallRoom(target);
+        if (roomId) {
+          setCallRoomId(roomId);
+          setIsCallInitiator(true);
+        }
       }
       setInCall(true);
     } else {
       handleEndCall();
     }
-  }, [inCall, contacts, handleEndCall]);
+  }, [inCall, contacts, handleEndCall, createCallRoom]);
 
   // Split contacts into site team and others when site filter is active
   const { siteContacts, otherContacts } = useMemo(() => {
@@ -168,12 +206,20 @@ function CommsPageContent() {
 
             {/* Video call area */}
             <div className="flex-1 relative rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-primary)] overflow-hidden min-h-[300px]">
-              {inCall ? (
+              {inCall && callRoomId ? (
+                <VideoCall
+                  roomId={callRoomId}
+                  isInitiator={isCallInitiator}
+                  onCallEnd={handleEndCall}
+                  localName="You"
+                  remoteName={callerName}
+                  remoteInitials={callerInitials}
+                />
+              ) : inCall ? (
                 <>
-                  {/* Remote video (full area) */}
+                  {/* Fallback mock call UI when no roomId */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#0f1f3d] to-[#0a1225]">
                     <div className="absolute inset-0 grid-pattern opacity-10" />
-                    {/* Simulated video of technician */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green/20 to-cyan/20 border border-green/20 flex items-center justify-center">
                         <span className="text-4xl font-bold text-green/60">
@@ -181,7 +227,6 @@ function CommsPageContent() {
                         </span>
                       </div>
                     </div>
-                    {/* Name overlay */}
                     <div className="absolute bottom-16 left-4 px-3 py-1.5 rounded-lg bg-[var(--nav-bg-primary)]/60 backdrop-blur">
                       <p className="text-sm font-medium text-white">
                         {callerName}
@@ -191,7 +236,6 @@ function CommsPageContent() {
                       </p>
                     </div>
 
-                    {/* Equipment context during call */}
                     {showEquipmentContext && (
                       <div className="absolute top-4 right-56 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--nav-bg-primary)]/60 backdrop-blur border border-cyan/20">
                         <Wrench className="w-3 h-3 text-cyan" />
@@ -202,7 +246,6 @@ function CommsPageContent() {
                     )}
                   </div>
 
-                  {/* Local video (PiP) */}
                   <div className="absolute top-4 right-4 w-48 h-36 rounded-xl bg-[var(--nav-bg-secondary)] border border-[var(--nav-border)] overflow-hidden shadow-[var(--nav-shadow-lg)]">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-dim to-magenta flex items-center justify-center">
@@ -214,7 +257,6 @@ function CommsPageContent() {
                     </div>
                   </div>
 
-                  {/* Call duration */}
                   <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--nav-bg-primary)]/60 backdrop-blur border border-[var(--nav-border)]">
                     <div className="w-2 h-2 rounded-full bg-green status-online" />
                     <span className="text-xs font-mono text-green">
@@ -222,7 +264,6 @@ function CommsPageContent() {
                     </span>
                   </div>
 
-                  {/* Annotation tools */}
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-1.5 rounded-xl bg-[var(--nav-bg-primary)]/60 backdrop-blur border border-[var(--nav-border)]">
                     {[Pencil, Circle, MapPin, MessageCircle].map(
                       (Icon, i) => (
@@ -253,64 +294,66 @@ function CommsPageContent() {
                 </div>
               )}
 
-              {/* Call controls */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--nav-bg-primary)]/80 backdrop-blur border border-[var(--nav-border)]">
-                <button
-                  onClick={() => setMicOn(!micOn)}
-                  data-testid="comms-mic-btn"
-                  aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
-                  aria-pressed={micOn}
-                  className={cn(
-                    "p-2.5 rounded-xl transition-all",
-                    micOn
-                      ? "text-white bg-[var(--nav-bg-hover)]"
-                      : "text-red bg-red/10 border border-red/20"
-                  )}
-                >
-                  {micOn ? (
-                    <Mic className="w-4.5 h-4.5" />
+              {/* Call controls — only shown when NOT using real VideoCall (which has its own controls) */}
+              {!(inCall && callRoomId) && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--nav-bg-primary)]/80 backdrop-blur border border-[var(--nav-border)]">
+                  <button
+                    onClick={() => setMicOn(!micOn)}
+                    data-testid="comms-mic-btn"
+                    aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
+                    aria-pressed={micOn}
+                    className={cn(
+                      "p-2.5 rounded-xl transition-all",
+                      micOn
+                        ? "text-white bg-[var(--nav-bg-hover)]"
+                        : "text-red bg-red/10 border border-red/20"
+                    )}
+                  >
+                    {micOn ? (
+                      <Mic className="w-4.5 h-4.5" />
+                    ) : (
+                      <MicOff className="w-4.5 h-4.5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setCameraOn(!cameraOn)}
+                    data-testid="comms-camera-btn"
+                    aria-label={cameraOn ? "Turn off camera" : "Turn on camera"}
+                    aria-pressed={cameraOn}
+                    className={cn(
+                      "p-2.5 rounded-xl transition-all",
+                      cameraOn
+                        ? "text-white bg-[var(--nav-bg-hover)]"
+                        : "text-red bg-red/10 border border-red/20"
+                    )}
+                  >
+                    <Camera className="w-4.5 h-4.5" />
+                  </button>
+                  <button data-testid="comms-screenshare-btn" aria-label="Share screen" className="p-2.5 rounded-xl text-white bg-[var(--nav-bg-hover)] hover:bg-[var(--nav-bg-tertiary)] transition-colors">
+                    <Monitor className="w-4.5 h-4.5" />
+                  </button>
+                  <div className="w-px h-6 bg-[var(--nav-border)]" />
+                  {inCall ? (
+                    <button
+                      onClick={handleEndCall}
+                      data-testid="comms-hangup-btn"
+                      aria-label="End call"
+                      className="p-2.5 rounded-xl text-white bg-red hover:bg-red/80 transition-colors shadow-[0_0_12px_rgba(255,23,68,0.3)]"
+                    >
+                      <PhoneOff className="w-4.5 h-4.5" />
+                    </button>
                   ) : (
-                    <MicOff className="w-4.5 h-4.5" />
+                    <button
+                      onClick={handleQuickCall}
+                      data-testid="comms-call-btn"
+                      aria-label="Start call"
+                      className="p-2.5 rounded-xl text-white bg-green hover:bg-green/80 transition-colors shadow-[0_0_12px_rgba(0,230,118,0.3)]"
+                    >
+                      <Phone className="w-4.5 h-4.5" />
+                    </button>
                   )}
-                </button>
-                <button
-                  onClick={() => setCameraOn(!cameraOn)}
-                  data-testid="comms-camera-btn"
-                  aria-label={cameraOn ? "Turn off camera" : "Turn on camera"}
-                  aria-pressed={cameraOn}
-                  className={cn(
-                    "p-2.5 rounded-xl transition-all",
-                    cameraOn
-                      ? "text-white bg-[var(--nav-bg-hover)]"
-                      : "text-red bg-red/10 border border-red/20"
-                  )}
-                >
-                  <Camera className="w-4.5 h-4.5" />
-                </button>
-                <button data-testid="comms-screenshare-btn" aria-label="Share screen" className="p-2.5 rounded-xl text-white bg-[var(--nav-bg-hover)] hover:bg-[var(--nav-bg-tertiary)] transition-colors">
-                  <Monitor className="w-4.5 h-4.5" />
-                </button>
-                <div className="w-px h-6 bg-[var(--nav-border)]" />
-                {inCall ? (
-                  <button
-                    onClick={handleEndCall}
-                    data-testid="comms-hangup-btn"
-                    aria-label="End call"
-                    className="p-2.5 rounded-xl text-white bg-red hover:bg-red/80 transition-colors shadow-[0_0_12px_rgba(255,23,68,0.3)]"
-                  >
-                    <PhoneOff className="w-4.5 h-4.5" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleQuickCall}
-                    data-testid="comms-call-btn"
-                    aria-label="Start call"
-                    className="p-2.5 rounded-xl text-white bg-green hover:bg-green/80 transition-colors shadow-[0_0_12px_rgba(0,230,118,0.3)]"
-                  >
-                    <Phone className="w-4.5 h-4.5" />
-                  </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 

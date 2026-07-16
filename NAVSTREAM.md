@@ -19,6 +19,7 @@
 
 **Target deployment:** `https://navstream.gsechu.net`
 **Staging (LAN):** `http://192.168.1.100:3200` (macbook via colima Docker + Cloudflare tunnel)
+**SSH access:** `ssh root@192.168.1.100` (LAN) or `ssh root@mbp-vpn` (VPN)
 **Last updated:** 2026-07-16
 
 **Test suite:** 113 tests (64 domain + 33 component + 16 hooks/map) passing in ~1.3s

@@ -412,11 +412,28 @@ export default function FeedsPage() {
           }
         />
 
-        <div data-testid="feeds-grid" className={gridClasses[layout]}>
-          {feeds.map((feed, i) => (
-            <FeedTile key={feed.id} feed={feed} index={i} layout={layout} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div data-testid="feeds-grid-skeleton" className={gridClasses[layout]}>
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)] overflow-hidden"
+              >
+                <div className="animate-pulse bg-[var(--nav-bg-tertiary)] aspect-video w-full" />
+                <div className="p-3 space-y-2">
+                  <div className="animate-pulse rounded bg-[var(--nav-bg-tertiary)] h-4 w-3/4" />
+                  <div className="animate-pulse rounded bg-[var(--nav-bg-tertiary)] h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div data-testid="feeds-grid" className={gridClasses[layout]}>
+            {feeds.map((feed, i) => (
+              <FeedTile key={feed.id} feed={feed} index={i} layout={layout} />
+            ))}
+          </div>
+        )}
       </div>
     </AppShell>
   );

@@ -68,7 +68,7 @@ function getProfile(sensorId: string, sensorName: string): SensorProfile {
     lowerName.includes("temperature") &&
     (lowerName.includes("bearing") || lowerName.includes("pump"))
   ) {
-    return { drift: 0.1, noise: 0.3, spikeProbability: 0, spikeMagnitude: 0 };
+    return { drift: 0.35, noise: 0.4, spikeProbability: 0, spikeMagnitude: 0 };
   }
 
   // Pilbara screen vibration — periodic spikes
@@ -88,6 +88,7 @@ class SensorSimulator extends EventEmitter {
   private running = false;
   private offsets: Map<string, number> = new Map();
   private alertCounter = 0;
+  private tickCount = 0;
 
   /** Start the simulation loop. Idempotent — calling twice is safe. */
   async start() {
@@ -128,15 +129,21 @@ class SensorSimulator extends EventEmitter {
 
     if (allSensors.length === 0) return;
 
+    this.tickCount++;
     const now = new Date();
     const timestamp = now.toISOString();
 
     for (const sensor of allSensors) {
       const profile = getProfile(sensor.id, sensor.name);
 
-      // Accumulate drift offset
+      // Accumulate drift offset — accelerate after 10 ticks for demo visibility
       const prevOffset = this.offsets.get(sensor.id) ?? 0;
-      const newOffset = prevOffset + profile.drift;
+      let driftThisTick = profile.drift;
+      if (driftThisTick > 0 && this.tickCount > 10) {
+        // Triple drift after 10 ticks (~50s) so threshold is crossed within 2-3 min
+        driftThisTick *= 3;
+      }
+      const newOffset = prevOffset + driftThisTick;
       this.offsets.set(sensor.id, newOffset);
 
       // Compute value

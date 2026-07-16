@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <defs>
+    <pattern id="grid-fine" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e274410" stroke-width="0.5"/>
+    </pattern>
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="#0a0e1a"/>
+  <rect width="800" height="500" fill="url(#grid-fine)"/>
+
+  <!-- Outer perimeter -->
+  <rect x="20" y="20" width="760" height="460" rx="2" fill="none" stroke="#2a3555" stroke-width="2"/>
+  <rect x="30" y="30" width="740" height="440" rx="2" fill="none" stroke="#1e274480" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- ===== SCREENING PLANT (top-left) ===== -->
+  <rect x="40" y="40" width="200" height="120" rx="1" fill="#ffd60008" stroke="#ffd600" stroke-width="1.5" filter="url(#glow-amber)"/>
+  <text x="140" y="58" font-family="monospace" font-size="9" fill="#ffd600" text-anchor="middle" font-weight="bold">SCREENING PLANT</text>
+  <!-- Vibrating screen 1 -->
+  <g transform="translate(90, 95)">
+    <rect x="-30" y="-15" width="60" height="30" rx="2" fill="none" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="-25" y1="-8" x2="25" y2="-8" stroke="#3d5575" stroke-width="0.6"/>
+    <line x1="-25" y1="0" x2="25" y2="0" stroke="#3d5575" stroke-width="0.6"/>
+    <line x1="-25" y1="8" x2="25" y2="8" stroke="#3d5575" stroke-width="0.6"/>
+    <!-- Vibration indicator lines -->
+    <line x1="33" y1="-5" x2="38" y2="-8" stroke="#ffd60060" stroke-width="0.5"/>
+    <line x1="33" y1="0" x2="40" y2="0" stroke="#ffd60060" stroke-width="0.5"/>
+    <line x1="33" y1="5" x2="38" y2="8" stroke="#ffd60060" stroke-width="0.5"/>
+  </g>
+  <text x="90" y="125" font-family="monospace" font-size="6" fill="#5a7aa0" text-anchor="middle">SCREEN 1</text>
+  <!-- Vibrating screen 2 -->
+  <g transform="translate(185, 95)">
+    <rect x="-30" y="-15" width="60" height="30" rx="2" fill="none" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="-25" y1="-8" x2="25" y2="-8" stroke="#3d5575" stroke-width="0.6"/>
+    <line x1="-25" y1="0" x2="25" y2="0" stroke="#3d5575" stroke-width="0.6"/>
+    <line x1="-25" y1="8" x2="25" y2="8" stroke="#3d5575" stroke-width="0.6"/>
+  </g>
+  <text x="185" y="125" font-family="monospace" font-size="6" fill="#5a7aa0" text-anchor="middle">SCREEN 2</text>
+  <!-- Feed chute -->
+  <polygon points="120,42 160,42 155,55 125,55" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <text x="140" y="50" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">FEED</text>
+
+  <!-- ===== CONVEYOR SYSTEM (top, spanning left to right) ===== -->
+  <rect x="250" y="40" width="300" height="60" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="400" y="58" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">CONVEYOR SYSTEM</text>
+  <!-- Conveyor belt -->
+  <line x1="260" y1="75" x2="540" y2="75" stroke="#5a7aa0" stroke-width="1.5"/>
+  <line x1="260" y1="83" x2="540" y2="83" stroke="#5a7aa0" stroke-width="1.5"/>
+  <!-- Direction arrows -->
+  <path d="M300 79 L310 75 L300 71" fill="none" stroke="#00e5ff40" stroke-width="0.8"/>
+  <path d="M370 79 L380 75 L370 71" fill="none" stroke="#00e5ff40" stroke-width="0.8"/>
+  <path d="M440 79 L450 75 L440 71" fill="none" stroke="#00e5ff40" stroke-width="0.8"/>
+  <path d="M510 79 L520 75 L510 71" fill="none" stroke="#00e5ff40" stroke-width="0.8"/>
+  <!-- Rollers -->
+  <line x1="280" y1="73" x2="280" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <line x1="320" y1="73" x2="320" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <line x1="360" y1="73" x2="360" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <line x1="400" y1="73" x2="400" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <line x1="440" y1="73" x2="440" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <line x1="480" y1="73" x2="480" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <line x1="520" y1="73" x2="520" y2="85" stroke="#3d5575" stroke-width="0.5"/>
+  <!-- Transfer point -->
+  <rect x="240" y="68" width="15" height="22" rx="1" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <text x="247" y="95" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">XFER</text>
+
+  <!-- ===== STOCKPILE AREA (center, large) ===== -->
+  <rect x="250" y="110" width="200" height="150" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="350" y="128" font-family="monospace" font-size="10" fill="#5a7aa0" text-anchor="middle">STOCKPILE AREA</text>
+  <!-- Stockpile mounds (trapezoids) -->
+  <polygon points="290,240 320,180 350,180 380,240" fill="none" stroke="#3d5575" stroke-width="1"/>
+  <text x="335" y="220" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">PILE A</text>
+  <polygon points="370,240 395,190 420,190 445,240" fill="none" stroke="#3d5575" stroke-width="1"/>
+  <text x="407" y="225" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">PILE B</text>
+  <!-- Stacker/reclaimer -->
+  <line x1="300" y1="150" x2="430" y2="150" stroke="#5a7aa0" stroke-width="2"/>
+  <rect x="355" y="143" width="20" height="14" rx="1" fill="none" stroke="#5a7aa0" stroke-width="0.8"/>
+  <text x="365" y="153" font-family="monospace" font-size="5" fill="#5a7aa0" text-anchor="middle">S/R</text>
+  <!-- Rail tracks for stacker -->
+  <line x1="260" y1="162" x2="440" y2="162" stroke="#3d557540" stroke-width="1" stroke-dasharray="3 3"/>
+
+  <!-- ===== TRUCK LOADING (right side) ===== -->
+  <rect x="560" y="40" width="140" height="140" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="630" y="58" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">TRUCK LOADING</text>
+  <!-- Loading chute -->
+  <polygon points="610,75 650,75 645,100 615,100" fill="none" stroke="#5a7aa0" stroke-width="1"/>
+  <text x="630" y="90" font-family="monospace" font-size="5" fill="#5a7aa0" text-anchor="middle">CHUTE</text>
+  <!-- Truck bays -->
+  <rect x="580" y="115" width="45" height="20" rx="1" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <rect x="635" y="115" width="45" height="20" rx="1" fill="none" stroke="#3d5575" stroke-width="0.8"/>
+  <text x="602" y="128" font-family="monospace" font-size="5" fill="#3d5575" text-anchor="middle">BAY 1</text>
+  <text x="657" y="128" font-family="monospace" font-size="5" fill="#3d5575" text-anchor="middle">BAY 2</text>
+  <!-- Weighbridge -->
+  <rect x="595" y="145" width="70" height="15" rx="1" fill="none" stroke="#00e5ff30" stroke-width="0.8"/>
+  <text x="630" y="156" font-family="monospace" font-size="5" fill="#00e5ff60" text-anchor="middle">WEIGHBRIDGE</text>
+  <!-- Road out -->
+  <path d="M630 165 L630 180" stroke="#5a7aa040" stroke-width="4" stroke-dasharray="4 3"/>
+
+  <!-- ===== MAINTENANCE BAY (bottom-left) ===== -->
+  <rect x="40" y="200" width="200" height="120" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="140" y="218" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">MAINTENANCE BAY</text>
+  <!-- Heavy vehicle bay -->
+  <rect x="55" y="235" width="80" height="40" rx="2" fill="none" stroke="#3d5575" stroke-width="1"/>
+  <text x="95" y="260" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">TRUCK BAY</text>
+  <!-- Inspection pit -->
+  <rect x="65" y="280" width="60" height="8" rx="0.5" fill="#0d1525" stroke="#3d5575" stroke-width="0.6"/>
+  <text x="95" y="300" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">INSPECTION PIT</text>
+  <!-- Crane -->
+  <line x1="155" y1="230" x2="225" y2="230" stroke="#5a7aa080" stroke-width="2"/>
+  <line x1="155" y1="290" x2="225" y2="290" stroke="#5a7aa080" stroke-width="2"/>
+  <rect x="180" y="250" width="20" height="20" rx="1" fill="none" stroke="#5a7aa0" stroke-width="0.8"/>
+  <text x="190" y="263" font-family="monospace" font-size="5" fill="#5a7aa0" text-anchor="middle">HOIST</text>
+  <!-- Parts storage -->
+  <rect x="155" y="300" width="70" height="12" rx="0.5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <text x="190" y="310" font-family="monospace" font-size="4" fill="#3d5575" text-anchor="middle">PARTS STORAGE</text>
+
+  <!-- ===== FUEL DEPOT (bottom-center-left) ===== -->
+  <rect x="40" y="340" width="120" height="80" rx="1" fill="#ff444408" stroke="#ff444480" stroke-width="1.5"/>
+  <text x="100" y="358" font-family="monospace" font-size="9" fill="#ff6666" text-anchor="middle">FUEL DEPOT</text>
+  <text x="100" y="368" font-family="monospace" font-size="5" fill="#ff444060" text-anchor="middle">[HAZARDOUS]</text>
+  <!-- Fuel tanks -->
+  <ellipse cx="70" cy="395" rx="18" ry="12" fill="none" stroke="#ff444060" stroke-width="0.8"/>
+  <text x="70" y="398" font-family="monospace" font-size="5" fill="#ff444060" text-anchor="middle">DSL</text>
+  <ellipse cx="125" cy="395" rx="18" ry="12" fill="none" stroke="#ff444060" stroke-width="0.8"/>
+  <text x="125" y="398" font-family="monospace" font-size="5" fill="#ff444060" text-anchor="middle">PET</text>
+  <!-- Spill bund -->
+  <rect x="45" y="378" width="110" height="35" rx="2" fill="none" stroke="#ff444030" stroke-width="0.5" stroke-dasharray="3 2"/>
+
+  <!-- ===== COMMS TOWER (center) ===== -->
+  <g transform="translate(290, 320)">
+    <!-- Tower base -->
+    <rect x="-8" y="-5" width="16" height="10" rx="1" fill="none" stroke="#00e5ff" stroke-width="1" filter="url(#glow-cyan)"/>
+    <!-- Tower mast -->
+    <line x1="0" y1="-5" x2="0" y2="-40" stroke="#00e5ff80" stroke-width="1.5"/>
+    <!-- Antenna dishes -->
+    <path d="M-8,-30 Q0,-35 8,-30" fill="none" stroke="#00e5ff60" stroke-width="0.8"/>
+    <path d="M-6,-22 Q0,-26 6,-22" fill="none" stroke="#00e5ff60" stroke-width="0.8"/>
+    <!-- Signal waves -->
+    <path d="M10,-32 Q16,-32 16,-28" fill="none" stroke="#00e5ff30" stroke-width="0.5"/>
+    <path d="M12,-34 Q20,-34 20,-26" fill="none" stroke="#00e5ff20" stroke-width="0.5"/>
+  </g>
+  <text x="290" y="340" font-family="monospace" font-size="6" fill="#00e5ff80" text-anchor="middle">COMMS TOWER</text>
+
+  <!-- ===== SITE OFFICE (bottom-right) ===== -->
+  <rect x="460" y="280" width="160" height="80" rx="1" fill="#00e5ff10" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="540" y="298" font-family="monospace" font-size="9" fill="#5a7aa0" text-anchor="middle">SITE OFFICE</text>
+  <!-- Room divider -->
+  <line x1="540" y1="280" x2="540" y2="360" stroke="#2a3555" stroke-width="1"/>
+  <!-- Left: ops room -->
+  <text x="500" y="312" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">OPS ROOM</text>
+  <rect x="475" y="318" width="45" height="8" rx="1" fill="none" stroke="#3d5575" stroke-width="0.6"/>
+  <rect x="478" y="319" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <rect x="488" y="319" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <rect x="498" y="319" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <rect x="508" y="319" width="6" height="5" rx="0.5" fill="#3d5575" opacity="0.4"/>
+  <!-- Right: crib room -->
+  <text x="580" y="312" font-family="monospace" font-size="6" fill="#3d5575" text-anchor="middle">CRIB ROOM</text>
+  <rect x="555" y="320" width="30" height="15" rx="1" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+  <rect x="595" y="325" width="10" height="10" rx="5" fill="none" stroke="#3d5575" stroke-width="0.5"/>
+
+  <!-- ===== WASH-DOWN BAY (bottom) ===== -->
+  <rect x="460" y="370" width="160" height="50" rx="1" fill="#00e5ff08" stroke="#2a3555" stroke-width="1.5"/>
+  <text x="540" y="390" font-family="monospace" font-size="8" fill="#5a7aa0" text-anchor="middle">WASH-DOWN BAY</text>
+  <!-- Spray nozzles -->
+  <circle cx="490" cy="405" r="3" fill="none" stroke="#00e5ff40" stroke-width="0.5"/>
+  <circle cx="520" cy="405" r="3" fill="none" stroke="#00e5ff40" stroke-width="0.5"/>
+  <circle cx="550" cy="405" r="3" fill="none" stroke="#00e5ff40" stroke-width="0.5"/>
+  <circle cx="580" cy="405" r="3" fill="none" stroke="#00e5ff40" stroke-width="0.5"/>
+  <!-- Drain -->
+  <line x1="470" y1="410" x2="610" y2="410" stroke="#00e5ff20" stroke-width="1" stroke-dasharray="2 2"/>
+
+  <!-- ===== HAUL ROAD (right side, wide) ===== -->
+  <rect x="710" y="30" width="60" height="440" rx="0" fill="#0d1525" stroke="#1e274480" stroke-width="0.5"/>
+  <text x="740" y="250" font-family="monospace" font-size="7" fill="#2a3555" text-anchor="middle" transform="rotate(90, 740, 250)" letter-spacing="3">HAUL ROAD</text>
+  <!-- Road markings -->
+  <line x1="740" y1="40" x2="740" y2="460" stroke="#ffd60020" stroke-width="1" stroke-dasharray="8 8"/>
+
+  <!-- ===== INTERNAL ROADS ===== -->
+  <rect x="40" y="165" width="660" height="25" rx="0" fill="#0d1525" stroke="#1e274480" stroke-width="0.5"/>
+  <text x="370" y="182" font-family="monospace" font-size="6" fill="#2a3555" text-anchor="middle" letter-spacing="3">ACCESS ROAD</text>
+  <rect x="250" y="260" width="200" height="20" rx="0" fill="#0d1525" stroke="#1e274480" stroke-width="0.5"/>
+
+  <!-- ===== CAMERA SYMBOLS ===== -->
+  <g transform="translate(50, 50)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM1</text>
+  </g>
+  <g transform="translate(570, 50)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM2</text>
+  </g>
+  <g transform="translate(350, 120)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM3</text>
+  </g>
+  <g transform="translate(700, 250)">
+    <circle r="3" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.6"/>
+    <circle r="1" fill="#00e5ff" opacity="0.6"/>
+    <text x="6" y="3" font-family="monospace" font-size="4" fill="#00e5ff80">CAM4</text>
+  </g>
+
+  <!-- ===== FIRE EXTINGUISHERS ===== -->
+  <g transform="translate(230, 165)">
+    <rect x="-2" y="-3" width="4" height="6" rx="1" fill="#ff4444" opacity="0.3"/>
+    <text x="5" y="2" font-family="monospace" font-size="3.5" fill="#ff444460">FE</text>
+  </g>
+  <g transform="translate(630, 165)">
+    <rect x="-2" y="-3" width="4" height="6" rx="1" fill="#ff4444" opacity="0.3"/>
+    <text x="5" y="2" font-family="monospace" font-size="3.5" fill="#ff444460">FE</text>
+  </g>
+
+  <!-- ===== EMERGENCY ASSEMBLY ===== -->
+  <g transform="translate(350, 400)">
+    <rect x="-30" y="-12" width="60" height="24" rx="2" fill="#22c55e10" stroke="#22c55e" stroke-width="0.8" opacity="0.5"/>
+    <text x="0" y="-2" font-family="monospace" font-size="5" fill="#22c55e80" text-anchor="middle">EMERGENCY</text>
+    <text x="0" y="6" font-family="monospace" font-size="5" fill="#22c55e80" text-anchor="middle">ASSEMBLY</text>
+  </g>
+
+  <!-- ===== DOOR SYMBOLS ===== -->
+  <line x1="460" y1="280" x2="460" y2="300" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="240" y1="190" x2="240" y2="210" stroke="#00e5ff40" stroke-width="2"/>
+  <line x1="700" y1="100" x2="700" y2="120" stroke="#00e5ff40" stroke-width="2"/>
+
+  <!-- ===== NORTH ARROW ===== -->
+  <g transform="translate(740, 55)">
+    <polygon points="0,-18 -6,0 0,-8 6,0" fill="#5a7aa0" opacity="0.7"/>
+    <line x1="0" y1="0" x2="0" y2="10" stroke="#5a7aa0" stroke-width="1" opacity="0.5"/>
+    <text x="0" y="-22" font-family="monospace" font-size="8" fill="#5a7aa0" text-anchor="middle" font-weight="bold">N</text>
+  </g>
+
+  <!-- ===== SCALE BAR ===== -->
+  <g transform="translate(40, 470)">
+    <line x1="0" y1="0" x2="80" y2="0" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="0" y1="-3" x2="0" y2="3" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="80" y1="-3" x2="80" y2="3" stroke="#5a7aa0" stroke-width="1"/>
+    <line x1="40" y1="-2" x2="40" y2="2" stroke="#5a7aa0" stroke-width="0.5"/>
+    <text x="40" y="12" font-family="monospace" font-size="6" fill="#5a7aa0" text-anchor="middle">20m</text>
+  </g>
+
+  <!-- ===== TITLE BLOCK ===== -->
+  <g transform="translate(200, 470)">
+    <text font-family="monospace" font-size="7" fill="#3d5575">PILBARA IRON ORE PROCESSING</text>
+    <text y="10" font-family="monospace" font-size="5" fill="#2a3555">DWG: PIO-FP-001 REV.1 | SCALE 1:400 | MERIDIAN MINING SERVICES</text>
+  </g>
+</svg>

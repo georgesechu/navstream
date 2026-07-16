@@ -94,8 +94,36 @@ export default function SitesPage() {
           </div>
         )}
 
+        {/* Empty state */}
+        {!isLoading && sites.length === 0 && (
+          <div data-testid="sites-empty-state" className="flex flex-col items-center justify-center py-16 gap-4 rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)]">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--nav-bg-tertiary)] border border-[var(--nav-border)] flex items-center justify-center">
+              <MapPin className="w-7 h-7 text-[var(--nav-text-muted)]" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-[var(--nav-text-secondary)]">
+                No sites yet
+              </p>
+              <p className="text-xs text-[var(--nav-text-muted)] mt-1">
+                Add your first facility to start monitoring.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditSite(null);
+                setModalOpen(true);
+              }}
+              data-testid="sites-empty-add-btn"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan/10 text-cyan text-xs font-medium border border-cyan/20 hover:bg-cyan/20 transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              Add Site
+            </button>
+          </div>
+        )}
+
         {/* Sites table-like list */}
-        {!isLoading && <div data-testid="sites-table" className="rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)] overflow-hidden">
+        {!isLoading && sites.length > 0 && <div data-testid="sites-table" className="rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)] overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-4 py-2.5 border-b border-[var(--nav-border)] bg-[var(--nav-bg-tertiary)]">
             <span className="text-[11px] font-medium text-[var(--nav-text-muted)] uppercase tracking-wider">

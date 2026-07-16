@@ -28,9 +28,9 @@ vi.mock("next/link", () => ({
 }));
 
 // Mock framer-motion to avoid animation issues in tests
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({
+vi.mock("framer-motion", () => {
+  const createMotionComponent = (Tag: string) => {
+    return ({
       children,
       ...props
     }: {
@@ -38,23 +38,32 @@ vi.mock("framer-motion", () => ({
       [key: string]: unknown;
     }) => {
       const safeProps = { ...props };
-      // Remove motion-specific props that aren't valid DOM attributes
       delete safeProps.initial;
       delete safeProps.animate;
       delete safeProps.exit;
       delete safeProps.transition;
       delete safeProps.whileHover;
       delete safeProps.whileTap;
-      return <div {...safeProps}>{children}</div>;
+      delete safeProps.layoutId;
+      const El = Tag as unknown as React.ElementType;
+      return <El {...safeProps}>{children}</El>;
+    };
+  };
+  return {
+    motion: {
+      div: createMotionComponent("div"),
+      p: createMotionComponent("p"),
+      span: createMotionComponent("span"),
+      button: createMotionComponent("button"),
     },
-  },
-  AnimatePresence: ({ children }: { children?: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  useMotionValue: () => ({ get: () => 0, set: () => {} }),
-  useTransform: () => ({ get: () => 0 }),
-  animate: vi.fn(),
-}));
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => (
+      <>{children}</>
+    ),
+    useMotionValue: () => ({ get: () => 0, set: () => {} }),
+    useTransform: () => ({ get: () => 0 }),
+    animate: vi.fn(),
+  };
+});
 
 // Mock the WorldMap component since it has complex SVG rendering
 vi.mock("../world-map", () => ({
@@ -107,6 +116,15 @@ const mockSites = [
 const mockUseSites = vi.fn();
 vi.mock("@/hooks/use-sites", () => ({
   useSites: () => mockUseSites(),
+}));
+
+// Mock useLiveSensors hook
+vi.mock("@/hooks/use-live-sensors", () => ({
+  useLiveSensors: () => ({
+    sensorValues: new Map(),
+    alerts: [],
+    isConnected: true,
+  }),
 }));
 
 import { CommandMap } from "../command-map";
@@ -162,14 +180,14 @@ describe("CommandMap", () => {
     expect(screen.getByText("Loading sites...")).toBeInTheDocument();
   });
 
-  it("shows correct stats for online/warning/critical counts", () => {
+  it("shows correct stats for online/warning/alert counts", () => {
     render(<CommandMap />);
     // 1 online site
     expect(screen.getByTestId("command-map-stats-online")).toHaveTextContent("1");
     // 1 warning
     expect(screen.getByTestId("command-map-stats-warnings")).toHaveTextContent("1");
-    // 1 critical
-    expect(screen.getByTestId("command-map-stats-critical")).toHaveTextContent("1");
+    // Active alerts (sum of site alerts = 0+3+1 = 4)
+    expect(screen.getByTestId("command-map-stats-active-alerts")).toHaveTextContent("4");
   });
 
   it("shows facilities count header", () => {

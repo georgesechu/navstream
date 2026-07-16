@@ -377,6 +377,30 @@ export function SiteDetailView({
     [apiPois, liveEquipmentStatus]
   );
 
+  // Track POI status changes to trigger flash animations
+  const prevPoiStatusRef = useRef<Map<string, string>>(new Map());
+  const [flashingPois, setFlashingPois] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const prev = prevPoiStatusRef.current;
+    const newFlashing = new Set<string>();
+
+    for (const poi of pois) {
+      const prevStatus = prev.get(poi.id);
+      if (prevStatus && prevStatus !== poi.status) {
+        newFlashing.add(poi.id);
+      }
+      prev.set(poi.id, poi.status);
+    }
+
+    if (newFlashing.size > 0) {
+      setFlashingPois(newFlashing);
+      // Clear flash after animation completes
+      const timer = setTimeout(() => setFlashingPois(new Set()), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [pois]);
+
   // Auto-open POI detail panel when navigating with equipment context
   useEffect(() => {
     if (highlightEquipmentId && pois.length > 0) {
@@ -535,20 +559,24 @@ export function SiteDetailView({
               poiTypeColors[poi.type] ?? poiTypeColors.equipment;
             const poiStatus = statusConfig[poi.status];
             const isHighlighted = highlightEquipmentId !== undefined && poi.equipmentId === highlightEquipmentId;
+            const isFlashing = flashingPois.has(poi.id);
 
             return (
               <motion.div
                 key={poi.id}
                 initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: isHighlighted ? 1.15 : 1, opacity: 1 }}
-                transition={{
-                  delay: 0.3 + i * 0.1,
-                  type: "spring",
-                  stiffness: 200,
+                animate={{
+                  scale: isFlashing ? [1, 1.4, 1.1, 1.3, 1] : isHighlighted ? 1.15 : 1,
+                  opacity: 1,
                 }}
+                transition={
+                  isFlashing
+                    ? { duration: 0.8, ease: "easeOut" }
+                    : { delay: 0.3 + i * 0.1, type: "spring", stiffness: 200 }
+                }
                 data-testid={`site-canvas-poi-${poi.id}`}
                 data-poi-marker
-                className={cn("absolute group cursor-pointer", isHighlighted && "z-10")}
+                className={cn("absolute group cursor-pointer", isHighlighted && "z-10", isFlashing && "z-20")}
                 style={{ left: `${poi.x}%`, top: `${poi.y}%` }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -563,21 +591,40 @@ export function SiteDetailView({
                   }
                 }}
               >
+                {/* Flash ring on status change */}
+                {isFlashing && (
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 1 }}
+                    animate={{ scale: 3, opacity: 0 }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    className={cn(
+                      "absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-lg",
+                      poi.status === "critical" ? "bg-red/30 shadow-[0_0_30px_rgba(255,23,68,0.6)]" :
+                      poi.status === "warning" ? "bg-amber/30 shadow-[0_0_30px_rgba(255,171,0,0.6)]" :
+                      "bg-green/30 shadow-[0_0_30px_rgba(0,230,118,0.6)]"
+                    )}
+                  />
+                )}
                 {/* Marker */}
                 <div
                   className={cn(
                     "relative w-9 h-9 -ml-4.5 -mt-4.5 rounded-lg border flex items-center justify-center",
                     "transition-all duration-200 hover:scale-110",
                     typeColor,
-                    isHighlighted && "ring-2 ring-cyan ring-offset-1 ring-offset-[var(--nav-bg-secondary)] shadow-[0_0_16px_rgba(0,229,255,0.3)]"
+                    isHighlighted && "ring-2 ring-cyan ring-offset-1 ring-offset-[var(--nav-bg-secondary)] shadow-[0_0_16px_rgba(0,229,255,0.3)]",
+                    isFlashing && poi.status === "critical" && "border-red/60 bg-red/20 shadow-[0_0_20px_rgba(255,23,68,0.4)]",
+                    isFlashing && poi.status === "warning" && "border-amber/60 bg-amber/20 shadow-[0_0_20px_rgba(255,171,0,0.4)]"
                   )}
                 >
                   <poi.icon className="w-4 h-4" />
                   {/* Status dot */}
-                  <div
+                  <motion.div
+                    animate={isFlashing ? { scale: [1, 1.5, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.5, repeat: isFlashing ? 2 : 0 }}
                     className={cn(
-                      "absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-[var(--nav-bg-secondary)]",
-                      poiStatus.color
+                      "absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-[var(--nav-bg-secondary)] transition-colors duration-300",
+                      poiStatus.color,
+                      (poi.status === "critical" || poi.status === "warning") && "animate-pulse"
                     )}
                   />
                   {/* Delete button on hover */}
@@ -713,10 +760,24 @@ export function SiteDetailView({
               </span>
             </div>
             <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--nav-bg-primary)]/80 backdrop-blur-sm border border-[var(--nav-border)]"
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-1 rounded backdrop-blur-sm border",
+                isLiveConnected
+                  ? "bg-green/10 border-green/30"
+                  : "bg-[var(--nav-bg-primary)]/80 border-[var(--nav-border)]"
+              )}
               data-testid="site-canvas-live-indicator"
             >
-              <Radio className={cn("w-3 h-3", isLiveConnected ? "text-green animate-pulse" : "text-[var(--nav-text-muted)]")} />
+              <div className="relative">
+                <Radio className={cn("w-3 h-3", isLiveConnected ? "text-green" : "text-[var(--nav-text-muted)]")} />
+                {isLiveConnected && (
+                  <motion.div
+                    animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 rounded-full bg-green/40"
+                  />
+                )}
+              </div>
               <span className={cn("text-[10px] font-mono uppercase tracking-wider font-medium", isLiveConnected ? "text-green" : "text-[var(--nav-text-muted)]")}>
                 {isLiveConnected ? "Live" : "Offline"}
               </span>
@@ -770,7 +831,7 @@ export function SiteDetailView({
             description="View immersive panoramas"
             accent="magenta"
             delay={0.1}
-            href={`/viewer?site=${siteId}`}
+            href={`/viewer?site=${siteId}${selectedPoi?.equipmentId ? `&equipment=${selectedPoi.equipmentId}` : ""}`}
             data-testid="quick-action-walkthrough"
           />
           <QuickActionCard
@@ -779,7 +840,7 @@ export function SiteDetailView({
             description="Connect with on-site personnel"
             accent="green"
             delay={0.15}
-            href={`/comms?site=${siteId}`}
+            href={`/comms?site=${siteId}${selectedPoi?.equipmentId ? `&equipment=${selectedPoi.equipmentId}` : ""}`}
             data-testid="quick-action-call"
           />
           <QuickActionCard
@@ -788,7 +849,7 @@ export function SiteDetailView({
             description="View IR / thermal overlays"
             accent="amber"
             delay={0.2}
-            href={`/imaging?site=${siteId}`}
+            href={`/imaging?site=${siteId}${selectedPoi?.equipmentId ? `&equipment=${selectedPoi.equipmentId}` : ""}`}
             data-testid="quick-action-thermal"
           />
           <QuickActionCard
@@ -797,7 +858,7 @@ export function SiteDetailView({
             description="Real-time equipment telemetry"
             accent="cyan"
             delay={0.25}
-            href={`/feeds?site=${siteId}`}
+            href={`/feeds?site=${siteId}${selectedPoi?.equipmentId ? `&equipment=${selectedPoi.equipmentId}` : ""}`}
             data-testid="quick-action-sensors"
           />
           <QuickActionCard
@@ -806,7 +867,7 @@ export function SiteDetailView({
             description="Run AI-assisted analysis"
             accent="magenta"
             delay={0.3}
-            href={`/ai?site=${siteId}`}
+            href={`/ai?site=${siteId}${selectedPoi?.equipmentId ? `&equipment=${selectedPoi.equipmentId}` : ""}`}
             data-testid="quick-action-ai"
           />
 

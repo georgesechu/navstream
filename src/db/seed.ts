@@ -86,6 +86,7 @@ const SITES = [
     personnelCount: 12,
     activeAlerts: 1,
     uptime: 99.7,
+    floorPlanUrl: "/floor-plans/kalgoorlie.svg",
   },
   {
     id: "site-pilbara",
@@ -98,6 +99,7 @@ const SITES = [
     personnelCount: 9,
     activeAlerts: 3,
     uptime: 97.8,
+    floorPlanUrl: "/floor-plans/pilbara.svg",
   },
   {
     id: "site-broken-hill",
@@ -123,6 +125,7 @@ const SITES = [
     personnelCount: 7,
     activeAlerts: 0,
     uptime: 99.9,
+    floorPlanUrl: "/floor-plans/darwin.svg",
   },
   {
     id: "site-atacama",
