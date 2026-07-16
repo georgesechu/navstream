@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+}
+
+:root {
+  /* Core palette */
+  --nav-bg-primary: #0a0e1a;
+  --nav-bg-secondary: #0f1424;
+  --nav-bg-tertiary: #141a2e;
+  --nav-bg-elevated: #1a2138;
+  --nav-bg-hover: #1e2744;
+
+  /* Borders */
+  --nav-border: #1e2744;
+  --nav-border-subtle: #161d33;
+
+  /* Text */
+  --nav-text-primary: #e8ecf4;
+  --nav-text-secondary: #8b95b0;
+  --nav-text-muted: #5a6580;
+
+  /* Accent colors — neon */
+  --nav-cyan: #00e5ff;
+  --nav-cyan-dim: #00b8d4;
+  --nav-cyan-glow: rgba(0, 229, 255, 0.15);
+  --nav-amber: #ffab00;
+  --nav-amber-dim: #ff8f00;
+  --nav-amber-glow: rgba(255, 171, 0, 0.15);
+  --nav-magenta: #e040fb;
+  --nav-magenta-dim: #d500f9;
+  --nav-magenta-glow: rgba(224, 64, 251, 0.15);
+  --nav-green: #00e676;
+  --nav-green-dim: #00c853;
+  --nav-green-glow: rgba(0, 230, 118, 0.15);
+  --nav-red: #ff1744;
+  --nav-red-dim: #d50000;
+  --nav-red-glow: rgba(255, 23, 68, 0.15);
+
+  /* Shadows */
+  --nav-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --nav-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --nav-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --nav-shadow-glow-cyan: 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--nav-bg-primary);
+  --color-foreground: var(--nav-text-primary);
+  --color-surface: var(--nav-bg-secondary);
+  --color-surface-elevated: var(--nav-bg-elevated);
+  --color-border: var(--nav-border);
+  --color-border-subtle: var(--nav-border-subtle);
+  --color-muted: var(--nav-text-muted);
+  --color-secondary: var(--nav-text-secondary);
+
+  --color-cyan: var(--nav-cyan);
+  --color-cyan-dim: var(--nav-cyan-dim);
+  --color-amber: var(--nav-amber);
+  --color-amber-dim: var(--nav-amber-dim);
+  --color-magenta: var(--nav-magenta);
+  --color-green: var(--nav-green);
+  --color-red: var(--nav-red);
+
+  --font-sans: var(--font-geist-sans), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", "Fira Code", Menlo, Consolas, monospace;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nav-bg-elevated) transparent;
+}
+
+body, text, input, textarea, button, select {
+  background: var(--nav-bg-primary);
+  color: var(--nav-text-primary);
+  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+}
+
+svg text {
+  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+}
+
+/* Glow effects */
+.glow-cyan {
+  box-shadow: var(--nav-shadow-glow-cyan);
+}
+
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Status indicator animations */
+.status-online {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(0, 230, 118, 0);
+  }
+}
+
+/* Scanline overlay for that cyberpunk feel (optional, on specific containers) */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Grid pattern background */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(30, 39, 68, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 39, 68, 0.3) 1px, transparent 1px);
+  background-size: 40px 40px;
+}

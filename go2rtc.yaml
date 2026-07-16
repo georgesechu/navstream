@@ -1,0 +1,31 @@
+# go2rtc configuration — demo streams
+# Each stream loops a pre-recorded MP4 as a fake camera
+streams:
+  # Flat camera feeds (6)
+  cam-control-room:
+    - ffmpeg:/media/control-room.mp4#video=h264#audio=opus
+  cam-main-shaft:
+    - ffmpeg:/media/main-shaft.mp4#video=h264#audio=opus
+  cam-processing:
+    - ffmpeg:/media/processing.mp4#video=h264#audio=opus
+  cam-perimeter:
+    - ffmpeg:/media/perimeter.mp4#video=h264#audio=opus
+  cam-solar-array:
+    - ffmpeg:/media/solar-array.mp4#video=h264#audio=opus
+  cam-lng-tank:
+    - ffmpeg:/media/lng-tank.mp4#video=h264#audio=opus
+
+  # 360° equirectangular feeds (2)
+  cam-360-pump-station:
+    - ffmpeg:/media/360-pump-station.mp4#video=h264
+  cam-360-control-room:
+    - ffmpeg:/media/360-control-room.mp4#video=h264
+
+  # Thermal/IR feed (1)
+  cam-thermal-furnace:
+    - ffmpeg:/media/thermal-furnace.mp4#video=h264
+
+# WebRTC (WHEP) settings
+webrtc:
+  candidates:
+    - stun:stun.l.google.com:19302
