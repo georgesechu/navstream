@@ -2,11 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { fieldDevices } from "@/db/schema";
 import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
+
+/** How many seconds since lastSeenAt before we consider a device offline */
+const HEARTBEAT_TIMEOUT_SECONDS = 15;
 
 export async function GET() {
   try {
     const devices = await db.select().from(fieldDevices);
-    return NextResponse.json(devices);
+
+    // Server-side online/offline derivation based on heartbeat
+    const now = Date.now();
+    const withDerivedStatus = devices.map((d) => {
+      if (d.status === "online" && d.lastSeenAt) {
+        const lastSeen = new Date(d.lastSeenAt).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+        if (secondsAgo > HEARTBEAT_TIMEOUT_SECONDS) {
+          // Stale heartbeat — mark offline in DB too (fire and forget)
+          db.update(fieldDevices)
+            .set({ status: "offline", livekitRoomId: null })
+            .where(eq(fieldDevices.id, d.id))
+            .then(() => {})
+            .catch(() => {});
+          return { ...d, status: "offline", livekitRoomId: null };
+        }
+      }
+      return d;
+    });
+
+    return NextResponse.json(withDerivedStatus);
   } catch (error) {
     console.error("Failed to fetch devices:", error);
     return NextResponse.json(

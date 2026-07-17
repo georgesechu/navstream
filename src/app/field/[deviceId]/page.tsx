@@ -362,9 +362,11 @@ export default function FieldTerminalPage() {
   useEffect(() => {
     if (connectionState !== "connected") return;
 
-    updateIntervalRef.current = setInterval(async () => {
+    // Send heartbeat immediately, then every 5 seconds
+    const sendHeartbeat = async () => {
       const payload: Record<string, unknown> = {
         token,
+        status: "online",
         lastSeenAt: new Date().toISOString(),
       };
       if (gpsCoords) {
@@ -373,6 +375,9 @@ export default function FieldTerminalPage() {
       }
       if (batteryLevel !== null) {
         payload.batteryLevel = batteryLevel;
+      }
+      if (roomIdRef.current) {
+        payload.livekitRoomId = roomIdRef.current;
       }
 
       try {
@@ -384,7 +389,10 @@ export default function FieldTerminalPage() {
       } catch {
         // Silently fail — will retry next tick
       }
-    }, 2000);
+    };
+
+    sendHeartbeat(); // Immediate first heartbeat
+    updateIntervalRef.current = setInterval(sendHeartbeat, 5000);
 
     return () => {
       if (updateIntervalRef.current) {

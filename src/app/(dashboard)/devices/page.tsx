@@ -286,7 +286,7 @@ export default function DevicesPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-1">
-                      {isOnline && device.livekitRoomId ? (
+                      {isOnline ? (
                         <button
                           onClick={() => setViewFeedDevice(device)}
                           data-testid={`device-view-feed-btn-${device.id}`}
@@ -358,7 +358,7 @@ export default function DevicesPage() {
 
       {/* View Feed Modal */}
       <AnimatePresence>
-        {viewFeedDevice && viewFeedDevice.livekitRoomId && (
+        {viewFeedDevice && (
           <ViewFeedModal
             device={viewFeedDevice}
             roomId={viewFeedDevice.livekitRoomId}
@@ -610,13 +610,53 @@ function QrCodeModal({
 
 function ViewFeedModal({
   device,
-  roomId,
+  roomId: initialRoomId,
   onClose,
 }: {
   device: FieldDevice;
-  roomId: string;
+  roomId: string | null;
   onClose: () => void;
 }) {
+  const [roomId, setRoomId] = useState<string | null>(initialRoomId);
+  const [connecting, setConnecting] = useState(!initialRoomId);
+
+  // If no room exists, create one and let the field terminal join
+  useEffect(() => {
+    if (roomId) return;
+    let cancelled = false;
+
+    async function createRoom() {
+      try {
+        const res = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            callerId: device.id,
+            calleeId: "dashboard-viewer",
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to create room");
+        const data = await res.json();
+        if (!cancelled) {
+          setRoomId(data.roomId);
+          // Update device with the room ID so the field terminal can see it
+          await fetch(`/api/devices/${device.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ livekitRoomId: data.roomId }),
+          });
+          setConnecting(false);
+        }
+      } catch (err) {
+        console.error("Failed to create call room:", err);
+        if (!cancelled) setConnecting(false);
+      }
+    }
+
+    createRoom();
+    return () => { cancelled = true; };
+  }, [roomId, device.id]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -667,14 +707,26 @@ function ViewFeedModal({
         </div>
 
         <div className="aspect-video">
-          <VideoCall
-            roomId={roomId}
-            isInitiator={false}
-            onCallEnd={onClose}
-            localName="Dashboard"
-            remoteName={device.name}
-            remoteInitials={device.name.charAt(0).toUpperCase()}
-          />
+          {connecting ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[var(--nav-bg-primary)]">
+              <Loader2 className="w-8 h-8 text-cyan animate-spin" />
+              <p className="text-sm text-[var(--nav-text-muted)]">Connecting to {device.name}...</p>
+            </div>
+          ) : roomId ? (
+            <VideoCall
+              roomId={roomId}
+              isInitiator={false}
+              onCallEnd={onClose}
+              localName="Dashboard"
+              remoteName={device.name}
+              remoteInitials={device.name.charAt(0).toUpperCase()}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[var(--nav-bg-primary)]">
+              <Camera className="w-8 h-8 text-[var(--nav-text-muted)]" />
+              <p className="text-sm text-[var(--nav-text-muted)]">Unable to connect to device feed</p>
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
