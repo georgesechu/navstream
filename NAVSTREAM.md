@@ -521,7 +521,7 @@ Each sprint ends with a **gate** — a set of checks that must pass before movin
 - [x] **Call UI** — start call from comms page, clicking contact shows their info in call area. PiP, mic/camera toggles. Context-aware: reads `?site=` and `?equipment=` params
 - [x] **All pages wired to DB** — Team, Analytics, Imaging context params all use real data. Analytics uses domain logic (costSavings, alertsBySite, avgResolutionTime, completionRate)
 - [ ] **Shared camera view** — field technician's phone camera streams to back-office via LiveKit. Back-office can see what they see
-- [ ] **AR annotations on shared view** — back-office draws circles, arrows, text on the shared video stream. Annotations appear on both sides in real-time (Canvas overlay synced via LiveKit data channel)
+- [x] **AR annotations on shared view** — Canvas overlay with pen/circle/arrow/text tools. Annotations sync between parties via signaling API. Neon glow rendering matching cyberpunk theme
 - [x] **Guided session checklists** — work orders from DB shown as sessions with step progress. Mapped via `/api/work-orders` endpoint. Interactive: expand to see steps, toggle checkboxes, auto-updates status (open→in-progress→completed)
 - [x] **Claude API integration** — AI chat with Claude API (falls back to smart keyword-based mock responses when no API key). System prompt positions as industrial diagnostics expert. Context-aware via URL params
 - [x] **AI work order generation** — "Generate work order" → returns structured JSON → rendered as formatted work order card → "Save" button creates real work order in DB via `/api/work-orders` POST
@@ -530,7 +530,7 @@ Each sprint ends with a **gate** — a set of checks that must pass before movin
 
 **Gate 4:**
 - [x] Video call works between two browser tabs (simulating back-office ↔ field) — browser WebRTC with signaling API
-- [ ] Annotations drawn by one party appear on the other's view
+- [x] Annotations drawn by one party appear on the other's view
 - [x] Guided session: work orders displayed as sessions with step progress from DB
 - [x] AI assistant responds with real equipment context (not generic text)
 - [x] AI-generated work order saves to DB and appears in work orders list
@@ -543,14 +543,14 @@ Each sprint ends with a **gate** — a set of checks that must pass before movin
 ### Sprint 5 — Field Technician PWA & Polish
 *On-site experience. Final demo readiness.*
 
-- [ ] **PWA manifest + service worker** — installable on phone/tablet. Splash screen with NavStream branding. Offline-capable for cached data (floor plans, checklists, equipment specs)
-- [ ] **Dynamic PWA naming** — field terminal PWA manifest generated per device: app name, short name, and icon pulled from device config in DB. E.g., "NavStream — Pump Station Cam" or "NavStream — David's Helmet"
+- [x] **PWA manifest + service worker** — installable PWA with NavStream branding, cache-first strategy, push notification handler. Manifest at `/manifest.webmanifest`
+- [x] **Dynamic PWA naming** — field terminal at `/field/[deviceId]/manifest.json` generates per-device manifest with custom name from DB
 - [x] **Technician mobile UI** — `/field/[deviceId]` route: camera viewfinder, GPS tracking, battery status, connection indicator. Dark theme, large touch targets, standalone (no sidebar)
 - [ ] **Photo/video capture** — camera access via `getUserMedia`. Capture image → attach to checklist step or work order. Upload to S3 bucket
 - [ ] **Push notifications** — browser push for incoming calls and critical alerts when app is backgrounded
 - [ ] **Thin Android wrapper (if needed)** — Trusted Web Activity (TWA) wrapping the PWA for Play Store distribution. Only if PWA camera/notification APIs prove insufficient on target devices
 - [x] **Analytics wired to real data** — KPI cards, bar charts, sparklines compute from actual DB data. Cost savings computed from `remoteResolutions × avgTripCost`
-- [ ] **Shift handover report** — AI-generated summary of all events/resolutions/alerts during a shift period
+- [x] **Shift handover report** — AI queries real DB data (alerts + work orders from last 8h), generates structured markdown report with events, active issues, completed work, recommendations. Button on analytics page
 - [x] **Visual polish pass** — loading skeletons, empty states, error boundaries, page transitions, POI flash animations, live alert badges
 - [ ] **Demo walkthrough mode** — optional guided overlay that walks through the 5-minute demo scenario with annotations and highlights (for self-guided demos)
 
