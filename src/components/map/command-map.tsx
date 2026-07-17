@@ -3,7 +3,7 @@
 import { type Site } from "@/stores/app-store";
 import { useSites } from "@/hooks/use-sites";
 import { useLiveSensors } from "@/hooks/use-live-sensors";
-import { WorldMap } from "./world-map";
+import { DynamicMap } from "./map-wrapper";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -355,7 +355,7 @@ export function CommandMap() {
         {/* Map area */}
         <div data-testid="command-map-viewport" className="xl:col-span-2 relative rounded-xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)] overflow-hidden min-h-[400px]">
           {/* Interactive world map */}
-          <WorldMap
+          <DynamicMap
             sites={liveSites}
             devices={onlineDevices.map((d) => ({
               id: d.id,

@@ -154,6 +154,54 @@ svg text {
   z-index: 10;
 }
 
+/* Leaflet dark theme overrides */
+.leaflet-container {
+  background: var(--nav-bg-primary) !important;
+}
+.leaflet-popup-content-wrapper {
+  background: var(--nav-bg-secondary) !important;
+  color: var(--nav-text-primary) !important;
+  border: 1px solid var(--nav-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+.leaflet-popup-tip {
+  background: var(--nav-bg-secondary) !important;
+  border: 1px solid var(--nav-border) !important;
+}
+.leaflet-popup .leaflet-popup-close-button {
+  color: var(--nav-text-muted) !important;
+}
+.leaflet-popup .leaflet-popup-close-button:hover {
+  color: var(--nav-text-primary) !important;
+}
+.leaflet-control-zoom a {
+  background: var(--nav-bg-secondary) !important;
+  color: var(--nav-text-primary) !important;
+  border-color: var(--nav-border) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: var(--nav-bg-tertiary) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(10, 14, 26, 0.7) !important;
+  color: var(--nav-text-muted) !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a {
+  color: var(--nav-text-secondary) !important;
+}
+.leaflet-device-marker {
+  background: none !important;
+  border: none !important;
+}
+
+/* Pulsing animation for active Leaflet markers */
+@keyframes leaflet-marker-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 230, 118, 0); }
+}
+
 /* Grid pattern background */
 .grid-pattern {
   background-image:
