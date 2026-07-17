@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useFetch } from "@/hooks/use-fetch";
-import { VideoCall } from "@/components/comms/video-call";
 
 interface FieldDevice {
   id: string;
@@ -361,10 +360,8 @@ export default function DevicesPage() {
         {viewFeedDevice && (
           <ViewFeedModal
             device={viewFeedDevice}
-            roomId={viewFeedDevice.livekitRoomId}
             onClose={() => {
               setViewFeedDevice(null);
-              refetch();
             }}
           />
         )}
@@ -610,52 +607,44 @@ function QrCodeModal({
 
 function ViewFeedModal({
   device,
-  roomId: initialRoomId,
   onClose,
 }: {
   device: FieldDevice;
-  roomId: string | null;
   onClose: () => void;
 }) {
-  const [roomId, setRoomId] = useState<string | null>(initialRoomId);
-  const [connecting, setConnecting] = useState(!initialRoomId);
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // If no room exists, create one and let the field terminal join
   useEffect(() => {
-    if (roomId) return;
     let cancelled = false;
 
-    async function createRoom() {
+    const fetchSnapshot = async () => {
       try {
-        const res = await fetch("/api/calls", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            callerId: device.id,
-            calleeId: "dashboard-viewer",
-          }),
-        });
-        if (!res.ok) throw new Error("Failed to create room");
-        const data = await res.json();
-        if (!cancelled) {
-          setRoomId(data.roomId);
-          // Update device with the room ID so the field terminal can see it
-          await fetch(`/api/devices/${device.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ livekitRoomId: data.roomId }),
-          });
-          setConnecting(false);
+        const res = await fetch(`/api/devices/${device.id}/snapshot`);
+        if (!res.ok) {
+          if (!cancelled) setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.error("Failed to create call room:", err);
-        if (!cancelled) setConnecting(false);
+        const data = await res.json();
+        if (!cancelled && data.snapshot) {
+          setSnapshotUrl(data.snapshot);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
       }
-    }
+    };
 
-    createRoom();
-    return () => { cancelled = true; };
-  }, [roomId, device.id]);
+    // Fetch immediately, then poll
+    fetchSnapshot();
+    pollRef.current = setInterval(fetchSnapshot, 500);
+
+    return () => {
+      cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [device.id]);
 
   return (
     <motion.div
@@ -706,26 +695,28 @@ function ViewFeedModal({
           </button>
         </div>
 
-        <div className="aspect-video">
-          {connecting ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[var(--nav-bg-primary)]">
-              <Loader2 className="w-8 h-8 text-cyan animate-spin" />
-              <p className="text-sm text-[var(--nav-text-muted)]">Connecting to {device.name}...</p>
+        <div className="aspect-video bg-[var(--nav-bg-primary)] flex items-center justify-center">
+          {loading && !snapshotUrl ? (
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-8 h-8 text-[var(--nav-cyan)] animate-spin" />
+              <p className="text-sm text-[var(--nav-text-muted)]">
+                Waiting for camera feed...
+              </p>
             </div>
-          ) : roomId ? (
-            <VideoCall
-              roomId={roomId}
-              isInitiator={false}
-              receiveOnly
-              onCallEnd={onClose}
-              localName="Dashboard"
-              remoteName={device.name}
-              remoteInitials={device.name.charAt(0).toUpperCase()}
+          ) : snapshotUrl ? (
+            <img
+              src={snapshotUrl}
+              alt={`Live feed from ${device.name}`}
+              data-testid="devices-feed-snapshot"
+              className="w-full h-full object-contain"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[var(--nav-bg-primary)]">
+            <div className="flex flex-col items-center gap-3">
               <Camera className="w-8 h-8 text-[var(--nav-text-muted)]" />
-              <p className="text-sm text-[var(--nav-text-muted)]">Unable to connect to device feed</p>
+              <p className="text-sm text-[var(--nav-text-muted)]">
+                No camera feed available — ensure the field device camera is
+                active
+              </p>
             </div>
           )}
         </div>

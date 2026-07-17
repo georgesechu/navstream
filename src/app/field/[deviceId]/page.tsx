@@ -27,28 +27,7 @@ interface DeviceInfo {
 
 type ConnectionState = "connecting" | "connected" | "error" | "unauthorized";
 
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  // Free TURN relays for NAT traversal
-  {
-    urls: "turn:openrelay.metered.ca:80",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443?transport=tcp",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-];
-
-const POLL_INTERVAL = 1000;
+const SNAPSHOT_INTERVAL = 500; // 2 fps
 
 export default function FieldTerminalPage() {
   const rawParams = useParams();
@@ -60,6 +39,9 @@ export default function FieldTerminalPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const gpsWatchRef = useRef<number | null>(null);
   const updateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const snapshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const [connectionState, setConnectionState] =
@@ -74,159 +56,62 @@ export default function FieldTerminalPage() {
     lng: number;
   } | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [snapshotState, setSnapshotState] = useState<
+    "idle" | "sending" | "active" | "error"
+  >("idle");
 
-  // WebRTC state for streaming to dashboard
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [webrtcState, setWebrtcState] = useState<"idle" | "connecting" | "connected" | "failed">("idle");
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sentCandidatesRef = useRef(0);
-  const roomIdRef = useRef<string | null>(null);
-
-  // Signaling helper
-  const signal = useCallback(
-    async (currentRoomId: string, type: string, payload: unknown) => {
-      try {
-        await fetch(`/api/calls/${currentRoomId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, payload, role: "caller" }),
-        });
-      } catch (err) {
-        console.error("Signaling error:", err);
-      }
-    },
-    []
-  );
-
-  // Create call room and start WebRTC when camera is active
+  // Snapshot capture: grab frames from <video> and POST to server
   useEffect(() => {
-    if (!cameraActive || !streamRef.current || !device || connectionState !== "connected") return;
+    if (!cameraActive || !videoRef.current || connectionState !== "connected")
+      return;
 
-    let cancelled = false;
+    let sending = false;
 
-    async function startWebRTC() {
+    const captureAndSend = async () => {
+      if (sending || !videoRef.current) return;
+      const video = videoRef.current;
+      if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+      sending = true;
       try {
-        setWebrtcState("connecting");
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 240;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, 320, 240);
+        const jpeg = canvas.toDataURL("image/jpeg", 0.6);
 
-        // Create a call room
-        const createRes = await fetch("/api/calls", {
+        const res = await fetch(`/api/devices/${deviceId}/snapshot`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ callerId: deviceId, calleeId: "dashboard" }),
+          body: JSON.stringify({ token, snapshot: jpeg }),
         });
-        if (!createRes.ok) {
-          console.error("Failed to create call room");
-          setWebrtcState("failed");
-          return;
+        if (res.ok) {
+          setSnapshotState("active");
+        } else {
+          setSnapshotState("error");
         }
-        const { roomId: newRoomId } = await createRes.json();
-        if (cancelled) return;
-
-        setRoomId(newRoomId);
-        roomIdRef.current = newRoomId;
-
-        // Store room ID on device record
-        await fetch(`/api/devices/${deviceId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, livekitRoomId: newRoomId }),
-        });
-        if (cancelled) return;
-
-        // Create peer connection
-        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-        pcRef.current = pc;
-
-        // Add camera tracks to peer connection
-        const stream = streamRef.current!;
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-        // Collect ICE candidates
-        pc.onicecandidate = (event) => {
-          if (event.candidate && roomIdRef.current) {
-            signal(roomIdRef.current, "ice-candidate", event.candidate.toJSON());
-          }
-        };
-
-        pc.onconnectionstatechange = () => {
-          if (pc.connectionState === "connected") {
-            setWebrtcState("connected");
-          } else if (
-            pc.connectionState === "failed" ||
-            pc.connectionState === "disconnected"
-          ) {
-            setWebrtcState("failed");
-          }
-        };
-
-        // Create and send offer
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        await signal(newRoomId, "offer", pc.localDescription);
-
-        // Poll for answer and ICE candidates from dashboard
-        pollRef.current = setInterval(async () => {
-          if (!roomIdRef.current) return;
-          try {
-            const res = await fetch(`/api/calls/${roomIdRef.current}`);
-            if (!res.ok) return;
-            const data = await res.json();
-
-            if (data.status === "ended") {
-              // Dashboard ended the call — clean up
-              if (pcRef.current) {
-                pcRef.current.close();
-                pcRef.current = null;
-              }
-              if (pollRef.current) clearInterval(pollRef.current);
-              setWebrtcState("idle");
-              return;
-            }
-
-            // Receive answer from dashboard (callee)
-            if (data.answer && pc.remoteDescription === null) {
-              await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
-
-            // Add ICE candidates from dashboard (callee)
-            const remoteCandidates = data.calleeCandidates;
-            if (remoteCandidates && remoteCandidates.length > sentCandidatesRef.current) {
-              for (let i = sentCandidatesRef.current; i < remoteCandidates.length; i++) {
-                try {
-                  await pc.addIceCandidate(new RTCIceCandidate(remoteCandidates[i]));
-                } catch {
-                  // Candidate may already be added
-                }
-              }
-              sentCandidatesRef.current = remoteCandidates.length;
-            }
-          } catch {
-            // Poll error, will retry
-          }
-        }, POLL_INTERVAL);
-      } catch (err) {
-        console.error("WebRTC setup error:", err);
-        if (!cancelled) setWebrtcState("failed");
+      } catch {
+        setSnapshotState("error");
+      } finally {
+        sending = false;
       }
-    }
+    };
 
-    startWebRTC();
+    setSnapshotState("sending");
+    snapshotIntervalRef.current = setInterval(captureAndSend, SNAPSHOT_INTERVAL);
+    // Capture first frame immediately
+    captureAndSend();
 
     return () => {
-      cancelled = true;
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
+      if (snapshotIntervalRef.current) {
+        clearInterval(snapshotIntervalRef.current);
+        snapshotIntervalRef.current = null;
       }
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-      sentCandidatesRef.current = 0;
+      setSnapshotState("idle");
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraActive, device, connectionState]);
+  }, [cameraActive, connectionState, deviceId, token]);
 
   // Validate device and token
   useEffect(() => {
@@ -279,7 +164,7 @@ export default function FieldTerminalPage() {
           width: { ideal: quality.width },
           height: { ideal: quality.height },
         },
-        audio: true,
+        audio: false,
       });
 
       streamRef.current = stream;
@@ -354,10 +239,7 @@ export default function FieldTerminalPage() {
         const nav = navigator as Navigator & {
           getBattery?: () => Promise<{
             level: number;
-            addEventListener: (
-              e: string,
-              cb: () => void
-            ) => void;
+            addEventListener: (e: string, cb: () => void) => void;
           }>;
         };
         if (nav.getBattery) {
@@ -374,11 +256,10 @@ export default function FieldTerminalPage() {
     getBattery();
   }, [connectionState]);
 
-  // Send GPS updates to server every 2 seconds (includes lastSeenAt for dashboard freshness)
+  // Send GPS updates to server every 5 seconds (includes lastSeenAt for dashboard freshness)
   useEffect(() => {
     if (connectionState !== "connected") return;
 
-    // Send heartbeat immediately, then every 5 seconds
     const sendHeartbeat = async () => {
       const payload: Record<string, unknown> = {
         token,
@@ -391,9 +272,6 @@ export default function FieldTerminalPage() {
       }
       if (batteryLevel !== null) {
         payload.batteryLevel = batteryLevel;
-      }
-      if (roomIdRef.current) {
-        payload.livekitRoomId = roomIdRef.current;
       }
 
       try {
@@ -422,19 +300,8 @@ export default function FieldTerminalPage() {
     if (connectionState !== "connected") return;
 
     const markOffline = () => {
-      // Clean up WebRTC call room
-      if (roomIdRef.current) {
-        // Signal end to the call room
-        const endBlob = new Blob(
-          [JSON.stringify({ type: "end", payload: {}, role: "caller" })],
-          { type: "application/json" }
-        );
-        navigator.sendBeacon(`/api/calls/${roomIdRef.current}`, endBlob);
-      }
-      // sendBeacon with Blob to set correct Content-Type so the API can parse JSON
-      // Clear livekitRoomId on the device
       const blob = new Blob(
-        [JSON.stringify({ token, status: "offline", livekitRoomId: null })],
+        [JSON.stringify({ token, status: "offline" })],
         { type: "application/json" }
       );
       navigator.sendBeacon(`/api/devices/${deviceId}`, blob);
@@ -442,9 +309,6 @@ export default function FieldTerminalPage() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        // On mobile, backgrounding the tab often precedes the page being killed.
-        // Send an offline beacon proactively; if the user comes back quickly the
-        // next periodic update will set status back to online via lastSeenAt.
         markOffline();
       }
     };
@@ -589,7 +453,7 @@ export default function FieldTerminalPage() {
           </div>
         </div>
 
-        {/* Center recording indicator + WebRTC status */}
+        {/* Center recording indicator + snapshot status */}
         {cameraActive && (
           <div className="absolute top-14 left-1/2 -translate-x-1/2 flex items-center gap-3 px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
             <div className="flex items-center gap-2">
@@ -598,23 +462,37 @@ export default function FieldTerminalPage() {
                 Live
               </span>
             </div>
-            {roomId && (
-              <div className="flex items-center gap-1.5 border-l border-white/20 pl-3" data-testid="field-terminal-room-id">
-                <MonitorSmartphone className={cn(
+            <div
+              className="flex items-center gap-1.5 border-l border-white/20 pl-3"
+              data-testid="field-terminal-snapshot-status"
+            >
+              <MonitorSmartphone
+                className={cn(
                   "w-3 h-3",
-                  webrtcState === "connected" ? "text-[#00e676]" :
-                  webrtcState === "failed" ? "text-red-400" : "text-amber-400"
-                )} />
-                <span className={cn(
+                  snapshotState === "active"
+                    ? "text-[#00e676]"
+                    : snapshotState === "error"
+                      ? "text-red-400"
+                      : "text-amber-400"
+                )}
+              />
+              <span
+                className={cn(
                   "text-[10px] font-mono uppercase tracking-wider",
-                  webrtcState === "connected" ? "text-[#00e676]" :
-                  webrtcState === "failed" ? "text-red-400" : "text-amber-400"
-                )}>
-                  {webrtcState === "connected" ? "Streaming" :
-                   webrtcState === "failed" ? "Stream Failed" : "Linking..."}
-                </span>
-              </div>
-            )}
+                  snapshotState === "active"
+                    ? "text-[#00e676]"
+                    : snapshotState === "error"
+                      ? "text-red-400"
+                      : "text-amber-400"
+                )}
+              >
+                {snapshotState === "active"
+                  ? "Streaming"
+                  : snapshotState === "error"
+                    ? "Stream Error"
+                    : "Linking..."}
+              </span>
+            </div>
           </div>
         )}
 
@@ -622,7 +500,12 @@ export default function FieldTerminalPage() {
         {gpsAccuracy !== null && (
           <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
             <span className="text-[10px] font-mono text-white/50">
-              GPS {gpsAccuracy < 10 ? "High" : gpsAccuracy < 50 ? "Med" : "Low"}{" "}
+              GPS{" "}
+              {gpsAccuracy < 10
+                ? "High"
+                : gpsAccuracy < 50
+                  ? "Med"
+                  : "Low"}{" "}
               Accuracy ({Math.round(gpsAccuracy)}m)
             </span>
           </div>
