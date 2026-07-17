@@ -192,7 +192,7 @@ export default function LandingPage() {
             <NavStreamTextLogo height={14} />
           </div>
           <Link
-            href="/login"
+            href="/dashboard"
             className="px-5 py-2 rounded-lg text-xs font-semibold tracking-wide bg-[var(--nav-cyan)] text-[var(--nav-bg-primary)] hover:bg-[var(--nav-cyan-dim)] transition-colors"
           >
             Sign In
@@ -239,7 +239,7 @@ export default function LandingPage() {
 
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
-                href="/login"
+                href="/dashboard"
                 className="group inline-flex items-center gap-2 px-7 py-3 rounded-lg font-semibold text-sm bg-[var(--nav-cyan)] text-[var(--nav-bg-primary)] hover:bg-[var(--nav-cyan-dim)] hover:shadow-[0_0_24px_rgba(0,229,255,0.25)] transition-all"
               >
                 Open Dashboard
@@ -406,7 +406,7 @@ export default function LandingPage() {
             The demo is seeded with realistic facility data — 6 sites, live sensors, thermal imaging, and AI diagnostics.
           </p>
           <Link
-            href="/login"
+            href="/dashboard"
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg font-semibold text-sm bg-[var(--nav-cyan)] text-[var(--nav-bg-primary)] hover:bg-[var(--nav-cyan-dim)] hover:shadow-[0_0_24px_rgba(0,229,255,0.25)] transition-all"
           >
             Open Dashboard
