@@ -716,6 +716,7 @@ function ViewFeedModal({
             <VideoCall
               roomId={roomId}
               isInitiator={false}
+              receiveOnly
               onCallEnd={onClose}
               localName="Dashboard"
               remoteName={device.name}

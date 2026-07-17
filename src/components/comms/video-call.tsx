@@ -29,6 +29,8 @@ interface VideoCallProps {
   localName?: string;
   remoteName?: string;
   remoteInitials?: string;
+  /** When true, only receives remote video — no local camera needed */
+  receiveOnly?: boolean;
 }
 
 type CallState =
@@ -53,6 +55,7 @@ export function VideoCall({
   localName = "You",
   remoteName = "Remote",
   remoteInitials = "?",
+  receiveOnly = false,
 }: VideoCallProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -120,26 +123,34 @@ export function VideoCall({
 
     async function init() {
       try {
-        // Get local media
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        localStreamRef.current = stream;
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
+        // Get local media (skip in receive-only mode)
+        if (!receiveOnly) {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+          if (cancelled) {
+            stream.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          localStreamRef.current = stream;
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
         }
 
         // Create peer connection
         const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         pcRef.current = pc;
 
-        // Add local tracks
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        // Add local tracks (only if we have a local stream)
+        if (localStreamRef.current) {
+          localStreamRef.current.getTracks().forEach((track) => pc.addTrack(track, localStreamRef.current!));
+        } else {
+          // In receive-only mode, add transceivers to receive media
+          pc.addTransceiver("video", { direction: "recvonly" });
+          pc.addTransceiver("audio", { direction: "recvonly" });
+        }
 
         // Handle remote tracks
         pc.ontrack = (event) => {
