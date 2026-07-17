@@ -15,14 +15,14 @@
 | Sprint 2 | Streaming: Video, 360°, Thermal (WebRTC) | **Complete** |
 | Sprint 3 | Real-Time Sensors, Alerts, Map | **Complete** |
 | Sprint 4 | Communications (LiveKit), AI (Claude) | **In Progress** |
-| Sprint 5 | Field Tech PWA, Polish, Demo Ready | Not Started |
+| Sprint 5 | Field Tech PWA, Polish, Demo Ready | **In Progress** |
 
 **Target deployment:** `https://navstream.gsechu.net`
 **Staging (LAN):** `http://192.168.1.100:3200` (macbook via colima Docker + Cloudflare tunnel)
 **SSH access:** `ssh root@192.168.1.100` (LAN) or `ssh root@mbp-vpn` (VPN)
 **Last updated:** 2026-07-16
 
-**Test suite:** 113 tests (64 domain + 33 component + 16 hooks/map) passing in ~1.3s
+**Test suite:** 139 tests (78 domain + 38 component + 19 hooks + 4 map) passing in ~1.6s
 
 ---
 
@@ -526,15 +526,15 @@ Each sprint ends with a **gate** — a set of checks that must pass before movin
 - [x] **Claude API integration** — AI chat with Claude API (falls back to smart keyword-based mock responses when no API key). System prompt positions as industrial diagnostics expert. Context-aware via URL params
 - [x] **AI work order generation** — "Generate work order" → returns structured JSON → rendered as formatted work order card → "Save" button creates real work order in DB via `/api/work-orders` POST
 - [ ] **Session recording** — LiveKit composite recording stored to S3/local volume. Playback in session history
-- [ ] **Instant Field Terminal (QR device pairing)** — see "Instant Field Terminal" section below for full design
+- [x] **Instant Field Terminal (QR device pairing)** — device management API, QR code generation, field terminal mobile page with camera/GPS. Devices dashboard page with create/delete/QR modal
 
 **Gate 4:**
-- [ ] Video call works between two browser tabs (simulating back-office ↔ field)
+- [x] Video call works between two browser tabs (simulating back-office ↔ field) — browser WebRTC with signaling API
 - [ ] Annotations drawn by one party appear on the other's view
 - [x] Guided session: work orders displayed as sessions with step progress from DB
 - [x] AI assistant responds with real equipment context (not generic text)
 - [x] AI-generated work order saves to DB and appears in work orders list
-- [ ] QR scan → phone camera appears as live feed in dashboard within 5 seconds
+- [x] QR scan → phone camera appears as live feed in dashboard within 5 seconds
 - [ ] E2E test: start call → draw annotation → end call → verify session log
 - [x] Deployed and functional at `navstream.gsechu.net`
 
@@ -545,13 +545,13 @@ Each sprint ends with a **gate** — a set of checks that must pass before movin
 
 - [ ] **PWA manifest + service worker** — installable on phone/tablet. Splash screen with NavStream branding. Offline-capable for cached data (floor plans, checklists, equipment specs)
 - [ ] **Dynamic PWA naming** — field terminal PWA manifest generated per device: app name, short name, and icon pulled from device config in DB. E.g., "NavStream — Pump Station Cam" or "NavStream — David's Helmet"
-- [ ] **Technician mobile UI** — simplified layout for `/field/[deviceId]` routes: live camera viewfinder, call controls, guided checklists, photo capture. Large touch targets, minimal chrome
+- [x] **Technician mobile UI** — `/field/[deviceId]` route: camera viewfinder, GPS tracking, battery status, connection indicator. Dark theme, large touch targets, standalone (no sidebar)
 - [ ] **Photo/video capture** — camera access via `getUserMedia`. Capture image → attach to checklist step or work order. Upload to S3 bucket
 - [ ] **Push notifications** — browser push for incoming calls and critical alerts when app is backgrounded
 - [ ] **Thin Android wrapper (if needed)** — Trusted Web Activity (TWA) wrapping the PWA for Play Store distribution. Only if PWA camera/notification APIs prove insufficient on target devices
-- [ ] **Analytics wired to real data** — KPI cards, bar charts, sparklines compute from actual DB data. Cost savings computed from `remoteResolutions × avgTripCost`
+- [x] **Analytics wired to real data** — KPI cards, bar charts, sparklines compute from actual DB data. Cost savings computed from `remoteResolutions × avgTripCost`
 - [ ] **Shift handover report** — AI-generated summary of all events/resolutions/alerts during a shift period
-- [ ] **Visual polish pass** — loading skeletons, empty states, error boundaries, transition smoothness audit
+- [x] **Visual polish pass** — loading skeletons, empty states, error boundaries, page transitions, POI flash animations, live alert badges
 - [ ] **Demo walkthrough mode** — optional guided overlay that walks through the 5-minute demo scenario with annotations and highlights (for self-guided demos)
 
 **Gate 5 (Demo Ready):**

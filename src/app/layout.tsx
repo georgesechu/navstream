@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -12,12 +12,21 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0a0e1a",
+};
+
 export const metadata: Metadata = {
   title: "NavStream — Remote Facility Command Center",
   description:
     "Monitor, operate, and maintain remote facilities with immersive AR/VR, AI diagnostics, and real-time communications.",
   icons: {
     icon: "/logo.svg",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 

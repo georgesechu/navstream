@@ -8,6 +8,8 @@ interface CallRoom {
   answer: RTCSessionDescriptionInit | null;
   callerCandidates: RTCIceCandidateInit[];
   calleeCandidates: RTCIceCandidateInit[];
+  callerAnnotations: string | null;
+  calleeAnnotations: string | null;
   status: "waiting" | "connecting" | "connected" | "ended";
   createdAt: number;
 }
@@ -43,6 +45,8 @@ export async function GET(
       answer: room.answer,
       callerCandidates: room.callerCandidates,
       calleeCandidates: room.calleeCandidates,
+      callerAnnotations: room.callerAnnotations,
+      calleeAnnotations: room.calleeAnnotations,
     });
   } catch (error) {
     console.error("Failed to fetch room:", error);
@@ -84,12 +88,19 @@ export async function POST(
           room.calleeCandidates.push(payload);
         }
         break;
+      case "annotation":
+        if (role === "caller") {
+          room.callerAnnotations = typeof payload === "string" ? payload : JSON.stringify(payload);
+        } else {
+          room.calleeAnnotations = typeof payload === "string" ? payload : JSON.stringify(payload);
+        }
+        break;
       case "end":
         room.status = "ended";
         break;
       default:
         return NextResponse.json(
-          { error: "Invalid type. Expected: offer, answer, ice-candidate, end" },
+          { error: "Invalid type. Expected: offer, answer, ice-candidate, annotation, end" },
           { status: 400 }
         );
     }

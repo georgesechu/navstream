@@ -16,7 +16,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   ArrowUpRight,
+  FileText,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAnalytics } from "@/hooks/use-analytics";
 
 // Static sparkline data for trend visualization (not sourced from API)
@@ -41,6 +43,7 @@ function eventIconProps(severity: string): { icon: typeof CheckCircle2; color: s
 
 export default function AnalyticsPage() {
   const { kpis, alertsBySite: alertsBySiteData, recentEvents, isLoading } = useAnalytics();
+  const router = useRouter();
 
   return (
     <AppShell>
@@ -51,6 +54,14 @@ export default function AnalyticsPage() {
           accent="cyan"
           actions={
             <div className="flex items-center gap-2">
+              <button
+                data-testid="analytics-shift-report-btn"
+                onClick={() => router.push("/ai?prompt=shift-handover")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan/10 text-cyan border border-cyan/20 hover:bg-cyan/20 transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Generate Shift Report
+              </button>
               {["24h", "7d", "30d", "90d"].map((period) => (
                 <button
                   key={period}

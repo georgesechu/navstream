@@ -11,7 +11,16 @@ import {
   Loader2,
   MonitorSmartphone,
   WifiOff,
+  Pencil,
+  Circle,
+  ArrowUpRight,
+  Type,
+  Trash2,
 } from "lucide-react";
+import {
+  AnnotationOverlay,
+  type AnnotationTool,
+} from "@/components/comms/annotation-overlay";
 
 interface VideoCallProps {
   roomId: string;
@@ -56,6 +65,11 @@ export function VideoCall({
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(true);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
+  const [annotationTool, setAnnotationTool] = useState<AnnotationTool | null>(null);
+  const [remoteAnnotations, setRemoteAnnotations] = useState<string | undefined>(undefined);
+  const [videoDimensions, setVideoDimensions] = useState({ width: 640, height: 480 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const annotationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const role = isInitiator ? "caller" : "callee";
 
@@ -75,9 +89,18 @@ export function VideoCall({
     [roomId, role]
   );
 
+  // Send annotation data
+  const sendAnnotation = useCallback(
+    (data: string) => {
+      signal("annotation", data);
+    },
+    [signal]
+  );
+
   // End the call
   const endCall = useCallback(() => {
     if (pollRef.current) clearInterval(pollRef.current);
+    if (annotationPollRef.current) clearInterval(annotationPollRef.current);
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
@@ -232,6 +255,48 @@ export function VideoCall({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, isInitiator]);
 
+  // Poll for remote annotations
+  useEffect(() => {
+    if (callState !== "connected" && callState !== "connecting") return;
+
+    annotationPollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/calls/${roomId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const remoteKey = isInitiator
+          ? "calleeAnnotations"
+          : "callerAnnotations";
+        if (data[remoteKey]) {
+          setRemoteAnnotations(data[remoteKey]);
+        }
+      } catch {
+        // Poll error, will retry
+      }
+    }, 500);
+
+    return () => {
+      if (annotationPollRef.current) clearInterval(annotationPollRef.current);
+    };
+  }, [roomId, isInitiator, callState]);
+
+  // Track container dimensions for annotation overlay
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setVideoDimensions({
+          width: Math.round(entry.contentRect.width),
+          height: Math.round(entry.contentRect.height),
+        });
+      }
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   // Toggle microphone
   const toggleMic = useCallback(() => {
     if (localStreamRef.current) {
@@ -254,6 +319,7 @@ export function VideoCall({
 
   return (
     <div
+      ref={containerRef}
       className="relative w-full h-full rounded-xl overflow-hidden bg-gradient-to-br from-[#0a1628] via-[#0f1f3d] to-[#0a1225]"
       data-testid="video-call"
     >
@@ -268,6 +334,33 @@ export function VideoCall({
           hasRemoteVideo ? "opacity-100" : "opacity-0"
         )}
       />
+
+      {/* Annotation overlay */}
+      {callState === "connected" && annotationTool && (
+        <AnnotationOverlay
+          width={videoDimensions.width}
+          height={videoDimensions.height}
+          tool={annotationTool}
+          color="#00e5ff"
+          lineWidth={3}
+          onAnnotationData={sendAnnotation}
+          remoteAnnotations={remoteAnnotations}
+        />
+      )}
+
+      {/* Remote annotations display (when not actively annotating) */}
+      {callState === "connected" && !annotationTool && remoteAnnotations && (
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+          <AnnotationOverlay
+            width={videoDimensions.width}
+            height={videoDimensions.height}
+            tool="pen"
+            color="#00e5ff"
+            lineWidth={3}
+            remoteAnnotations={remoteAnnotations}
+          />
+        </div>
+      )}
 
       {/* Remote placeholder when no video */}
       {!hasRemoteVideo && (
@@ -365,6 +458,50 @@ export function VideoCall({
           {localName}
         </div>
       </div>
+
+      {/* Annotation toolbar */}
+      {callState === "connected" && (
+        <div
+          className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-1.5 rounded-xl bg-[#0a0e1a]/70 backdrop-blur border border-[#1e2744]"
+          data-testid="call-annotation-toolbar"
+        >
+          {(
+            [
+              { tool: "pen" as const, icon: Pencil, label: "Pen" },
+              { tool: "circle" as const, icon: Circle, label: "Circle" },
+              { tool: "arrow" as const, icon: ArrowUpRight, label: "Arrow" },
+              { tool: "text" as const, icon: Type, label: "Text" },
+              { tool: "clear" as const, icon: Trash2, label: "Clear annotations" },
+            ] as const
+          ).map(({ tool, icon: Icon, label }) => (
+            <button
+              key={tool}
+              onClick={() => {
+                if (tool === "clear") {
+                  setAnnotationTool("clear");
+                  // Reset to null after clearing
+                  setTimeout(() => setAnnotationTool(null), 50);
+                } else {
+                  setAnnotationTool(
+                    annotationTool === tool ? null : tool
+                  );
+                }
+              }}
+              data-testid={`call-annotation-tool-${tool}`}
+              aria-label={label}
+              aria-pressed={annotationTool === tool}
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                annotationTool === tool
+                  ? "text-[#00e5ff] bg-[#00e5ff]/10 border border-[#00e5ff]/30 shadow-[0_0_8px_rgba(0,229,255,0.2)]"
+                  : "text-[#8b95b0] hover:text-white hover:bg-[#1e2744]"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Call controls */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0a0e1a]/80 backdrop-blur border border-[#1e2744]">

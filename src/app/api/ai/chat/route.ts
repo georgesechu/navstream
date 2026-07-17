@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { alerts, workOrders, sites, equipment } from "@/db/schema";
+import { eq, gte, and, or } from "drizzle-orm";
 
 interface ChatRequest {
   message: string;
@@ -60,7 +63,169 @@ When generating work orders, respond with a JSON block wrapped in \`\`\`workorde
 
 Be concise but thorough. Use markdown formatting for readability. Always ground your analysis in specific sensor data and thresholds when available.`;
 
-function getMockResponse(message: string, context?: ChatRequest["context"]): ChatResponse {
+async function generateShiftReport(): Promise<ChatResponse> {
+  const now = new Date();
+  const shiftStart = new Date(now);
+  shiftStart.setHours(shiftStart.getHours() - 8);
+
+  try {
+    // Query alerts created in the last 8 hours
+    const recentAlerts = await db
+      .select({
+        id: alerts.id,
+        title: alerts.title,
+        severity: alerts.severity,
+        status: alerts.status,
+        siteName: sites.name,
+        equipmentName: equipment.name,
+        createdAt: alerts.createdAt,
+        resolvedAt: alerts.resolvedAt,
+        acknowledgedAt: alerts.acknowledgedAt,
+        resolutionNotes: alerts.resolutionNotes,
+      })
+      .from(alerts)
+      .innerJoin(sites, eq(alerts.siteId, sites.id))
+      .innerJoin(equipment, eq(alerts.equipmentId, equipment.id))
+      .where(
+        or(
+          gte(alerts.createdAt, shiftStart),
+          gte(alerts.resolvedAt, shiftStart),
+          gte(alerts.updatedAt, shiftStart)
+        )
+      );
+
+    // Query work orders updated in the last 8 hours
+    const recentWorkOrders = await db
+      .select({
+        id: workOrders.id,
+        title: workOrders.title,
+        status: workOrders.status,
+        priority: workOrders.priority,
+        siteName: sites.name,
+        equipmentName: equipment.name,
+        updatedAt: workOrders.updatedAt,
+        completedAt: workOrders.completedAt,
+      })
+      .from(workOrders)
+      .innerJoin(sites, eq(workOrders.siteId, sites.id))
+      .innerJoin(equipment, eq(workOrders.equipmentId, equipment.id))
+      .where(gte(workOrders.updatedAt, shiftStart));
+
+    // Categorize alerts
+    const triggeredAlerts = recentAlerts.filter(
+      (a) => a.createdAt && a.createdAt >= shiftStart
+    );
+    const resolvedAlerts = recentAlerts.filter(
+      (a) => a.resolvedAt && a.resolvedAt >= shiftStart
+    );
+    const activeAlerts = recentAlerts.filter(
+      (a) => a.status === "active" || a.status === "acknowledged"
+    );
+
+    // Build active issues list
+    const activeIssuesList = activeAlerts.length > 0
+      ? activeAlerts
+          .map(
+            (a) =>
+              `- **[${(a.severity || "info").toUpperCase()}]** ${a.title} -- ${a.siteName}, ${a.equipmentName}${a.status === "acknowledged" ? " (acknowledged)" : ""}`
+          )
+          .join("\n")
+      : "- No active issues";
+
+    // Build completed work list
+    const completedList =
+      resolvedAlerts.length > 0
+        ? resolvedAlerts
+            .map(
+              (a) =>
+                `- ${a.title} -- ${a.siteName}${a.resolutionNotes ? ` (${a.resolutionNotes})` : ""}`
+            )
+            .join("\n")
+        : "- No alerts resolved this shift";
+
+    // Build work orders section
+    const woSection =
+      recentWorkOrders.length > 0
+        ? recentWorkOrders
+            .map(
+              (wo) =>
+                `- **${wo.title}** -- ${wo.siteName} [${wo.status}] (${wo.priority} priority)`
+            )
+            .join("\n")
+        : "- No work order activity this shift";
+
+    // Determine recommendations based on data
+    const recommendations: string[] = [];
+    const criticalAlerts = activeAlerts.filter((a) => a.severity === "critical");
+    const warningAlerts = activeAlerts.filter((a) => a.severity === "warning");
+
+    if (criticalAlerts.length > 0) {
+      recommendations.push(
+        `Prioritize ${criticalAlerts.length} critical alert${criticalAlerts.length > 1 ? "s" : ""}: ${criticalAlerts.map((a) => `${a.title} at ${a.siteName}`).join(", ")}`
+      );
+    }
+    if (warningAlerts.length > 0) {
+      recommendations.push(
+        `Monitor ${warningAlerts.length} active warning${warningAlerts.length > 1 ? "s" : ""} for potential escalation`
+      );
+    }
+    if (recentWorkOrders.filter((wo) => wo.status === "open" || wo.status === "in-progress").length > 0) {
+      recommendations.push(
+        "Follow up on open/in-progress work orders for timely completion"
+      );
+    }
+    if (recommendations.length === 0) {
+      recommendations.push("All systems nominal -- continue routine monitoring");
+    }
+
+    const formatTime = (d: Date) =>
+      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const formatDate = (d: Date) => d.toLocaleDateString();
+
+    return {
+      role: "assistant",
+      content: `## Shift Handover Report -- ${formatDate(now)}
+**Period:** ${formatTime(shiftStart)} -- ${formatTime(now)}
+
+### Events
+- ${triggeredAlerts.length} alert${triggeredAlerts.length !== 1 ? "s" : ""} triggered
+- ${resolvedAlerts.length} alert${resolvedAlerts.length !== 1 ? "s" : ""} resolved
+- ${recentWorkOrders.length} work order${recentWorkOrders.length !== 1 ? "s" : ""} updated
+
+### Active Issues
+${activeIssuesList}
+
+### Completed Work
+${completedList}
+
+### Work Orders
+${woSection}
+
+### Recommendations
+${recommendations.map((r) => `- ${r}`).join("\n")}`,
+      workOrder: null,
+    };
+  } catch (error) {
+    console.error("Failed to generate shift report from DB:", error);
+    // Fallback to static report if DB is unavailable
+    const formatTime = (d: Date) =>
+      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return {
+      role: "assistant",
+      content: `## Shift Handover Report -- ${now.toLocaleDateString()}
+**Period:** ${formatTime(shiftStart)} -- ${formatTime(now)}
+
+### Events
+- Unable to fetch live data -- showing cached summary
+
+### Recommendations
+- Check database connectivity and retry the shift report`,
+      workOrder: null,
+    };
+  }
+}
+
+async function getMockResponse(message: string, context?: ChatRequest["context"]): Promise<ChatResponse> {
   const lowerMessage = message.toLowerCase();
   const siteName = context?.siteName || "Broken Hill Processing";
   const equipmentName = context?.equipmentName || "Pump Station";
@@ -167,38 +332,7 @@ I've prepared a maintenance work order for the bearing inspection at ${siteName}
   }
 
   if (lowerMessage.includes("shift") || lowerMessage.includes("handover")) {
-    const now = new Date();
-    const shiftStart = new Date(now);
-    shiftStart.setHours(shiftStart.getHours() - 8);
-
-    return {
-      role: "assistant",
-      content: `## Shift Handover Report
-**Period:** ${shiftStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -- ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} | ${now.toLocaleDateString()}
-
-### Events This Shift
-- **11:09** -- Bearing temperature warning triggered at ${siteName} (${equipmentName})
-- **11:15** -- Temperature escalated to critical (142\u00B0C)
-- **11:24** -- AI diagnostic: early-stage bearing wear (87% confidence)
-- **11:26** -- Work order WO-2026-0847 generated for bearing inspection
-- **14:30** -- David Okonkwo acknowledged alert, en route to pump station
-
-### Open Items for Next Shift
-1. Monitor ${equipmentName} bearing temperature (currently 142\u00B0C, threshold 155\u00B0C)
-2. Await David's inspection report (ETA: 2 hours)
-3. Svalbard communication still down -- IT team investigating
-4. Pilbara vibration anomaly acknowledged but not yet resolved
-
-### Key Metrics
-- Remote resolutions this shift: 3
-- Average response time: 8 minutes
-- Sites monitored: 6 (4 green, 1 amber, 1 red)
-
-### Recommendations
-- Keep close watch on ${siteName} -- if temperature exceeds 150\u00B0C, initiate emergency shutdown procedure
-- Follow up with Svalbard IT team if comms not restored within 1 hour`,
-      workOrder: null,
-    };
+    return await generateShiftReport();
   }
 
   // Default response
@@ -272,7 +406,7 @@ export async function POST(request: NextRequest) {
           const errorText = await response.text();
           console.error("Anthropic API error:", response.status, errorText);
           // Fall back to mock on API error
-          const mockResponse = getMockResponse(body.message, body.context);
+          const mockResponse = await getMockResponse(body.message, body.context);
           return NextResponse.json(mockResponse);
         }
 
@@ -291,13 +425,13 @@ export async function POST(request: NextRequest) {
       } catch (apiError) {
         console.error("Anthropic API call failed:", apiError);
         // Fall back to mock on network error
-        const mockResponse = getMockResponse(body.message, body.context);
+        const mockResponse = await getMockResponse(body.message, body.context);
         return NextResponse.json(mockResponse);
       }
     }
 
     // No API key — return smart mock response
-    const mockResponse = getMockResponse(body.message, body.context);
+    const mockResponse = await getMockResponse(body.message, body.context);
     return NextResponse.json(mockResponse);
   } catch (error) {
     console.error("AI chat error:", error);

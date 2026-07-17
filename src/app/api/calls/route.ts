@@ -11,6 +11,8 @@ interface CallRoom {
   answer: RTCSessionDescriptionInit | null;
   callerCandidates: RTCIceCandidateInit[];
   calleeCandidates: RTCIceCandidateInit[];
+  callerAnnotations: string | null;
+  calleeAnnotations: string | null;
   status: "waiting" | "connecting" | "connected" | "ended";
   createdAt: number;
 }
@@ -69,6 +71,8 @@ export async function POST(request: NextRequest) {
       answer: null,
       callerCandidates: [],
       calleeCandidates: [],
+      callerAnnotations: null,
+      calleeAnnotations: null,
       status: "waiting",
       createdAt: Date.now(),
     };
