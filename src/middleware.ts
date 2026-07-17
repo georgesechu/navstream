@@ -14,6 +14,7 @@ const PUBLIC_PREFIXES = [
   "/logo.svg",
   "/favicon.ico",
   "/floor-plans/",
+  "/panoramas/",
   "/manifest",
   "/sw.js",
   "/field/",
@@ -58,6 +59,6 @@ export const config = {
     /*
      * Match all request paths except static files
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|logo\\.svg|floor-plans/).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|logo\\.svg|floor-plans/|panoramas/).*)",
   ],
 };
