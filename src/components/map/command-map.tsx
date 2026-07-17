@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 
 const statusConfig = {
   online: {
@@ -233,10 +233,52 @@ function StatsBar({ sites, liveAlertCount }: { sites: Site[]; liveAlertCount?: n
   );
 }
 
+interface OnlineDevice {
+  id: string;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+  batteryLevel: number | null;
+}
+
+function useOnlineDevices(pollIntervalMs = 5000) {
+  const [devices, setDevices] = useState<OnlineDevice[]>([]);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchDevices = useCallback(async () => {
+    try {
+      const res = await fetch("/api/devices");
+      if (res.ok) {
+        const data: OnlineDevice[] = await res.json();
+        // Only include devices with GPS that are online
+        setDevices(
+          data.filter(
+            (d) => d.status === "online" && d.lat != null && d.lng != null
+          )
+        );
+      }
+    } catch {
+      // Silently fail — will retry next poll
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDevices();
+    pollRef.current = setInterval(fetchDevices, pollIntervalMs);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [fetchDevices, pollIntervalMs]);
+
+  return devices;
+}
+
 export function CommandMap() {
   const { sites, isLoading } = useSites();
   const { alerts: liveAlerts, isConnected: isLiveConnected } = useLiveSensors();
   const router = useRouter();
+  const onlineDevices = useOnlineDevices(5000);
 
   // Compute per-site live alert counts from SSE alerts
   const siteAlertCounts = useMemo(() => {
@@ -315,6 +357,14 @@ export function CommandMap() {
           {/* Interactive world map */}
           <WorldMap
             sites={liveSites}
+            devices={onlineDevices.map((d) => ({
+              id: d.id,
+              name: d.name,
+              lat: d.lat!,
+              lng: d.lng!,
+              status: d.status,
+              batteryLevel: d.batteryLevel,
+            }))}
             onSiteClick={(siteId) => router.push(`/sites/${siteId}`)}
             className="absolute inset-0"
           />

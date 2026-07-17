@@ -197,12 +197,15 @@ export default function FieldTerminalPage() {
     getBattery();
   }, [connectionState]);
 
-  // Send GPS updates to server every 2 seconds
+  // Send GPS updates to server every 2 seconds (includes lastSeenAt for dashboard freshness)
   useEffect(() => {
     if (connectionState !== "connected") return;
 
     updateIntervalRef.current = setInterval(async () => {
-      const payload: Record<string, unknown> = { token };
+      const payload: Record<string, unknown> = {
+        token,
+        lastSeenAt: new Date().toISOString(),
+      };
       if (gpsCoords) {
         payload.lat = gpsCoords.lat;
         payload.lng = gpsCoords.lng;
@@ -229,15 +232,35 @@ export default function FieldTerminalPage() {
     };
   }, [connectionState, deviceId, token, gpsCoords, batteryLevel]);
 
-  // Mark offline on unmount
+  // Mark device offline on page unload, tab close, and visibility change
   useEffect(() => {
-    return () => {
-      if (connectionState === "connected") {
-        navigator.sendBeacon(
-          `/api/devices/${deviceId}`,
-          JSON.stringify({ token, status: "offline" })
-        );
+    if (connectionState !== "connected") return;
+
+    const markOffline = () => {
+      // sendBeacon with Blob to set correct Content-Type so the API can parse JSON
+      const blob = new Blob(
+        [JSON.stringify({ token, status: "offline" })],
+        { type: "application/json" }
+      );
+      navigator.sendBeacon(`/api/devices/${deviceId}`, blob);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        // On mobile, backgrounding the tab often precedes the page being killed.
+        // Send an offline beacon proactively; if the user comes back quickly the
+        // next periodic update will set status back to online via lastSeenAt.
+        markOffline();
       }
+    };
+
+    window.addEventListener("beforeunload", markOffline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", markOffline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      markOffline();
     };
   }, [connectionState, deviceId, token]);
 

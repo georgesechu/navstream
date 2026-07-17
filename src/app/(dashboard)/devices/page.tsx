@@ -22,7 +22,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useFetch } from "@/hooks/use-fetch";
 
 interface FieldDevice {
@@ -45,6 +45,19 @@ interface SiteOption {
   name: string;
 }
 
+function formatRelativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function DevicesPage() {
   const {
     data: devices,
@@ -55,6 +68,24 @@ export default function DevicesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Poll for device updates every 5 seconds so online/offline status stays fresh
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    pollRef.current = setInterval(() => {
+      refetch();
+    }, 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [refetch]);
+
+  // Force re-render every 10s to keep relative timestamps fresh
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   const onlineCount = devices?.filter((d) => d.status === "online").length ?? 0;
   const totalCount = devices?.length ?? 0;
@@ -242,8 +273,8 @@ export default function DevicesPage() {
                       {device.lastSeenAt && (
                         <div className="flex items-center gap-1.5 text-[10px] text-[var(--nav-text-muted)]">
                           <Clock className="w-3 h-3" />
-                          <span>
-                            {new Date(device.lastSeenAt).toLocaleTimeString()}
+                          <span title={new Date(device.lastSeenAt).toLocaleString()}>
+                            {formatRelativeTime(device.lastSeenAt)}
                           </span>
                         </div>
                       )}

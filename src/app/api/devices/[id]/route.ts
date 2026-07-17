@@ -67,6 +67,15 @@ export async function PATCH(
     if (body.heading !== undefined) updates.heading = body.heading;
     if (body.batteryLevel !== undefined)
       updates.batteryLevel = body.batteryLevel;
+
+    // If a periodic heartbeat arrives (has lastSeenAt) and status isn't
+    // explicitly being set to offline, ensure the device is marked online.
+    // This recovers from visibilitychange offline beacons when the user
+    // returns to the tab.
+    if (body.lastSeenAt !== undefined && body.status === undefined) {
+      updates.status = "online";
+    }
+
     if (body.lastSeenAt !== undefined) {
       updates.lastSeenAt = new Date(body.lastSeenAt);
     } else if (Object.keys(updates).length > 0) {
@@ -91,6 +100,14 @@ export async function PATCH(
       { status: 500 }
     );
   }
+}
+
+// POST handler — used by sendBeacon (which always sends POST) for offline marking
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return PATCH(request, context);
 }
 
 export async function DELETE(

@@ -15,8 +15,18 @@ interface WorldMapSite {
   activeAlerts: number;
 }
 
+interface WorldMapDevice {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  status: string;
+  batteryLevel?: number | null;
+}
+
 interface WorldMapProps {
   sites: WorldMapSite[];
+  devices?: WorldMapDevice[];
   className?: string;
   onSiteClick?: (siteId: string) => void;
 }
@@ -353,6 +363,116 @@ function SiteTooltip({
   );
 }
 
+function DeviceMarker({
+  device,
+  x,
+  y,
+  index,
+}: {
+  device: WorldMapDevice;
+  x: number;
+  y: number;
+  index: number;
+}) {
+  const isOnline = device.status === "online";
+  const fill = isOnline ? "#00e5ff" : "#5a6580";
+  const glow = isOnline ? "rgba(0,229,255,0.5)" : "rgba(90,101,128,0.3)";
+
+  // Diamond shape (rotated square) to distinguish from site circles
+  const size = 5;
+
+  return (
+    <motion.g
+      data-testid={`world-map-device-${device.id}`}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{
+        delay: 0.5 + index * 0.1,
+        type: "spring",
+        stiffness: 260,
+        damping: 20,
+      }}
+      style={{ transformOrigin: `${x}px ${y}px` }}
+    >
+      {/* Pulsing glow for online devices */}
+      {isOnline && (
+        <circle cx={x} cy={y} r={12} fill={glow} opacity={0.15}>
+          <animate
+            attributeName="r"
+            values="10;18;10"
+            dur="2s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            values="0.2;0.04;0.2"
+            dur="2s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      )}
+
+      {/* Diamond marker */}
+      <rect
+        x={x - size}
+        y={y - size}
+        width={size * 2}
+        height={size * 2}
+        rx={1}
+        fill={fill}
+        stroke="#0a0e1a"
+        strokeWidth={1.5}
+        transform={`rotate(45 ${x} ${y})`}
+        style={{
+          filter: isOnline
+            ? `drop-shadow(0 0 6px ${glow}) drop-shadow(0 0 2px ${fill})`
+            : undefined,
+        }}
+      />
+
+      {/* Label */}
+      <g>
+        <rect
+          x={x + 10}
+          y={y - 6}
+          width={device.name.length * 4 + 10}
+          height={12}
+          rx={2}
+          fill="#0a0e1a"
+          fillOpacity={0.85}
+          stroke={fill}
+          strokeWidth={0.4}
+          strokeOpacity={0.4}
+        />
+        <text
+          x={x + 15}
+          y={y + 3}
+          fill={fill}
+          fontSize={6.5}
+          fontWeight={500}
+          fontFamily="var(--font-mono), monospace"
+        >
+          {device.name}
+        </text>
+      </g>
+
+      {/* Battery indicator */}
+      {device.batteryLevel != null && (
+        <text
+          x={x}
+          y={y + 16}
+          textAnchor="middle"
+          fill="#8b95b0"
+          fontSize={5.5}
+          fontFamily="var(--font-mono), monospace"
+        >
+          {device.batteryLevel}%
+        </text>
+      )}
+    </motion.g>
+  );
+}
+
 // Internal SVG dimensions
 const SVG_WIDTH = 1000;
 const SVG_HEIGHT = 500;
@@ -360,7 +480,7 @@ const SVG_HEIGHT = 500;
 // Zoom level constant
 const ZOOM_FACTOR = 2.5;
 
-export function WorldMap({ sites, className, onSiteClick }: WorldMapProps) {
+export function WorldMap({ sites, devices, className, onSiteClick }: WorldMapProps) {
   const [hoveredSiteId, setHoveredSiteId] = useState<string | null>(null);
   const [zoomedSiteId, setZoomedSiteId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -504,6 +624,18 @@ export function WorldMap({ sites, className, onSiteClick }: WorldMapProps) {
     [zoomedSiteId, zoomOut]
   );
 
+  // Compute device marker positions
+  const devicePositions = useMemo(() => {
+    if (!devices) return [];
+    return devices
+      .filter((d) => d.lat != null && d.lng != null)
+      .map((device) => ({
+        device,
+        x: mercatorX(device.lng, SVG_WIDTH),
+        y: mercatorY(device.lat, SVG_HEIGHT),
+      }));
+  }, [devices]);
+
   const hoveredMarker = markerPositions.find(
     (m) => m.site.id === hoveredSiteId
   );
@@ -569,6 +701,17 @@ export function WorldMap({ sites, className, onSiteClick }: WorldMapProps) {
             onHover={() => setHoveredSiteId(mp.site.id)}
             onLeave={() => setHoveredSiteId(null)}
             onClick={() => handleSiteClick(mp.site.id)}
+          />
+        ))}
+
+        {/* Device markers (diamond shape) */}
+        {devicePositions.map((dp, index) => (
+          <DeviceMarker
+            key={dp.device.id}
+            device={dp.device}
+            x={dp.x}
+            y={dp.y}
+            index={index}
           />
         ))}
 
