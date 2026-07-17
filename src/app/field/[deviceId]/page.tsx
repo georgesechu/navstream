@@ -13,6 +13,7 @@ import {
   Loader2,
   ShieldAlert,
   Signal,
+  MonitorSmartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,13 @@ interface DeviceInfo {
 }
 
 type ConnectionState = "connecting" | "connected" | "error" | "unauthorized";
+
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+];
+
+const POLL_INTERVAL = 1000;
 
 export default function FieldTerminalPage() {
   const rawParams = useParams();
@@ -50,6 +58,159 @@ export default function FieldTerminalPage() {
     lng: number;
   } | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+
+  // WebRTC state for streaming to dashboard
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [webrtcState, setWebrtcState] = useState<"idle" | "connecting" | "connected" | "failed">("idle");
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sentCandidatesRef = useRef(0);
+  const roomIdRef = useRef<string | null>(null);
+
+  // Signaling helper
+  const signal = useCallback(
+    async (currentRoomId: string, type: string, payload: unknown) => {
+      try {
+        await fetch(`/api/calls/${currentRoomId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type, payload, role: "caller" }),
+        });
+      } catch (err) {
+        console.error("Signaling error:", err);
+      }
+    },
+    []
+  );
+
+  // Create call room and start WebRTC when camera is active
+  useEffect(() => {
+    if (!cameraActive || !streamRef.current || !device || connectionState !== "connected") return;
+
+    let cancelled = false;
+
+    async function startWebRTC() {
+      try {
+        setWebrtcState("connecting");
+
+        // Create a call room
+        const createRes = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callerId: deviceId, calleeId: "dashboard" }),
+        });
+        if (!createRes.ok) {
+          console.error("Failed to create call room");
+          setWebrtcState("failed");
+          return;
+        }
+        const { roomId: newRoomId } = await createRes.json();
+        if (cancelled) return;
+
+        setRoomId(newRoomId);
+        roomIdRef.current = newRoomId;
+
+        // Store room ID on device record
+        await fetch(`/api/devices/${deviceId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, livekitRoomId: newRoomId }),
+        });
+        if (cancelled) return;
+
+        // Create peer connection
+        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+        pcRef.current = pc;
+
+        // Add camera tracks to peer connection
+        const stream = streamRef.current!;
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+        // Collect ICE candidates
+        pc.onicecandidate = (event) => {
+          if (event.candidate && roomIdRef.current) {
+            signal(roomIdRef.current, "ice-candidate", event.candidate.toJSON());
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === "connected") {
+            setWebrtcState("connected");
+          } else if (
+            pc.connectionState === "failed" ||
+            pc.connectionState === "disconnected"
+          ) {
+            setWebrtcState("failed");
+          }
+        };
+
+        // Create and send offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await signal(newRoomId, "offer", pc.localDescription);
+
+        // Poll for answer and ICE candidates from dashboard
+        pollRef.current = setInterval(async () => {
+          if (!roomIdRef.current) return;
+          try {
+            const res = await fetch(`/api/calls/${roomIdRef.current}`);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.status === "ended") {
+              // Dashboard ended the call — clean up
+              if (pcRef.current) {
+                pcRef.current.close();
+                pcRef.current = null;
+              }
+              if (pollRef.current) clearInterval(pollRef.current);
+              setWebrtcState("idle");
+              return;
+            }
+
+            // Receive answer from dashboard (callee)
+            if (data.answer && pc.remoteDescription === null) {
+              await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+
+            // Add ICE candidates from dashboard (callee)
+            const remoteCandidates = data.calleeCandidates;
+            if (remoteCandidates && remoteCandidates.length > sentCandidatesRef.current) {
+              for (let i = sentCandidatesRef.current; i < remoteCandidates.length; i++) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(remoteCandidates[i]));
+                } catch {
+                  // Candidate may already be added
+                }
+              }
+              sentCandidatesRef.current = remoteCandidates.length;
+            }
+          } catch {
+            // Poll error, will retry
+          }
+        }, POLL_INTERVAL);
+      } catch (err) {
+        console.error("WebRTC setup error:", err);
+        if (!cancelled) setWebrtcState("failed");
+      }
+    }
+
+    startWebRTC();
+
+    return () => {
+      cancelled = true;
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+      sentCandidatesRef.current = 0;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive, device, connectionState]);
 
   // Validate device and token
   useEffect(() => {
@@ -237,9 +398,19 @@ export default function FieldTerminalPage() {
     if (connectionState !== "connected") return;
 
     const markOffline = () => {
+      // Clean up WebRTC call room
+      if (roomIdRef.current) {
+        // Signal end to the call room
+        const endBlob = new Blob(
+          [JSON.stringify({ type: "end", payload: {}, role: "caller" })],
+          { type: "application/json" }
+        );
+        navigator.sendBeacon(`/api/calls/${roomIdRef.current}`, endBlob);
+      }
       // sendBeacon with Blob to set correct Content-Type so the API can parse JSON
+      // Clear livekitRoomId on the device
       const blob = new Blob(
-        [JSON.stringify({ token, status: "offline" })],
+        [JSON.stringify({ token, status: "offline", livekitRoomId: null })],
         { type: "application/json" }
       );
       navigator.sendBeacon(`/api/devices/${deviceId}`, blob);
@@ -394,13 +565,32 @@ export default function FieldTerminalPage() {
           </div>
         </div>
 
-        {/* Center recording indicator */}
+        {/* Center recording indicator + WebRTC status */}
         {cameraActive && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] font-mono text-white/70 uppercase tracking-wider">
-              Live
-            </span>
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 flex items-center gap-3 px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] font-mono text-white/70 uppercase tracking-wider">
+                Live
+              </span>
+            </div>
+            {roomId && (
+              <div className="flex items-center gap-1.5 border-l border-white/20 pl-3" data-testid="field-terminal-room-id">
+                <MonitorSmartphone className={cn(
+                  "w-3 h-3",
+                  webrtcState === "connected" ? "text-[#00e676]" :
+                  webrtcState === "failed" ? "text-red-400" : "text-amber-400"
+                )} />
+                <span className={cn(
+                  "text-[10px] font-mono uppercase tracking-wider",
+                  webrtcState === "connected" ? "text-[#00e676]" :
+                  webrtcState === "failed" ? "text-red-400" : "text-amber-400"
+                )}>
+                  {webrtcState === "connected" ? "Streaming" :
+                   webrtcState === "failed" ? "Stream Failed" : "Linking..."}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

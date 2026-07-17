@@ -21,9 +21,11 @@ import {
   Signal,
   Copy,
   Check,
+  Video,
 } from "lucide-react";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useFetch } from "@/hooks/use-fetch";
+import { VideoCall } from "@/components/comms/video-call";
 
 interface FieldDevice {
   id: string;
@@ -37,6 +39,7 @@ interface FieldDevice {
   heading: number | null;
   batteryLevel: number | null;
   cameraQuality: string;
+  livekitRoomId: string | null;
   createdAt: string;
 }
 
@@ -67,6 +70,7 @@ export default function DevicesPage() {
   const { data: sites } = useFetch<SiteOption[]>("/api/sites");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState<string | null>(null);
+  const [viewFeedDevice, setViewFeedDevice] = useState<FieldDevice | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Poll for device updates every 5 seconds so online/offline status stays fresh
@@ -282,14 +286,25 @@ export default function DevicesPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={() => setShowQrModal(device.id)}
-                        data-testid={`device-qr-btn-${device.id}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--nav-bg-hover)] text-[var(--nav-text-secondary)] hover:text-white hover:bg-[var(--nav-bg-tertiary)] transition-colors text-xs font-medium"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        QR Code
-                      </button>
+                      {isOnline && device.livekitRoomId ? (
+                        <button
+                          onClick={() => setViewFeedDevice(device)}
+                          data-testid={`device-view-feed-btn-${device.id}`}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--nav-cyan)]/10 text-[var(--nav-cyan)] border border-[var(--nav-cyan)]/20 hover:bg-[var(--nav-cyan)]/20 transition-colors text-xs font-medium"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          View Feed
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setShowQrModal(device.id)}
+                          data-testid={`device-qr-btn-${device.id}`}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--nav-bg-hover)] text-[var(--nav-text-secondary)] hover:text-white hover:bg-[var(--nav-bg-tertiary)] transition-colors text-xs font-medium"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          QR Code
+                        </button>
+                      )}
                       <button
                         onClick={() => copyPairingUrl(device)}
                         data-testid={`device-copy-btn-${device.id}`}
@@ -337,6 +352,20 @@ export default function DevicesPage() {
           <QrCodeModal
             deviceId={showQrModal}
             onClose={() => setShowQrModal(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* View Feed Modal */}
+      <AnimatePresence>
+        {viewFeedDevice && viewFeedDevice.livekitRoomId && (
+          <ViewFeedModal
+            device={viewFeedDevice}
+            roomId={viewFeedDevice.livekitRoomId}
+            onClose={() => {
+              setViewFeedDevice(null);
+              refetch();
+            }}
           />
         )}
       </AnimatePresence>
@@ -573,6 +602,79 @@ function QrCodeModal({
             Point your phone camera at this code. The browser will open a field
             terminal that streams camera and GPS data back to NavStream.
           </p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ViewFeedModal({
+  device,
+  roomId,
+  onClose,
+}: {
+  device: FieldDevice;
+  roomId: string;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-4xl mx-4 rounded-2xl border border-[var(--nav-border)] bg-[var(--nav-bg-secondary)] shadow-[var(--nav-shadow-lg)] overflow-hidden"
+        data-testid="devices-view-feed-modal"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--nav-border)]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-[var(--nav-cyan)]/10 text-[var(--nav-cyan)]">
+              <Video className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-[var(--nav-text-primary)]">
+                {device.name}
+              </h2>
+              <div className="flex items-center gap-3 mt-0.5">
+                {device.lat !== null && device.lng !== null && (
+                  <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--nav-text-muted)]">
+                    <MapPin className="w-3 h-3" />
+                    {device.lat.toFixed(4)}, {device.lng.toFixed(4)}
+                  </span>
+                )}
+                {device.batteryLevel !== null && (
+                  <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--nav-text-muted)]">
+                    <Battery className="w-3 h-3" />
+                    {device.batteryLevel}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--nav-text-muted)] hover:text-white hover:bg-[var(--nav-bg-hover)] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="aspect-video">
+          <VideoCall
+            roomId={roomId}
+            isInitiator={false}
+            onCallEnd={onClose}
+            localName="Dashboard"
+            remoteName={device.name}
+            remoteInitials={device.name.charAt(0).toUpperCase()}
+          />
         </div>
       </motion.div>
     </motion.div>

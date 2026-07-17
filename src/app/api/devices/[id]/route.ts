@@ -67,6 +67,8 @@ export async function PATCH(
     if (body.heading !== undefined) updates.heading = body.heading;
     if (body.batteryLevel !== undefined)
       updates.batteryLevel = body.batteryLevel;
+    if (body.livekitRoomId !== undefined)
+      updates.livekitRoomId = body.livekitRoomId;
 
     // If a periodic heartbeat arrives (has lastSeenAt) and status isn't
     // explicitly being set to offline, ensure the device is marked online.
