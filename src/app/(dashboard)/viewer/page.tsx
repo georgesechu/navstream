@@ -17,9 +17,10 @@ import {
   Crosshair,
   Layers,
   MapPin,
+  X,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { PanoramaHotspot } from "@/components/viewer/panorama-viewer";
 import type { PanoramaScene } from "@/lib/generate-panorama";
@@ -48,6 +49,7 @@ interface SceneConfig {
   id: string;
   name: string;
   site: string;
+  siteId: string;
   panoramaType: PanoramaScene;
   hotspots: PanoramaHotspot[];
   captured: string;
@@ -58,6 +60,7 @@ const scenes: SceneConfig[] = [
     id: "scene-1",
     name: "Control Room",
     site: "Kalgoorlie Gold Mine",
+    siteId: "site-kalgoorlie",
     panoramaType: "control-room",
     captured: "2 hours ago",
     hotspots: [
@@ -95,6 +98,7 @@ const scenes: SceneConfig[] = [
     id: "scene-2",
     name: "Main Shaft Entry",
     site: "Kalgoorlie Gold Mine",
+    siteId: "site-kalgoorlie",
     panoramaType: "industrial",
     captured: "1 day ago",
     hotspots: [
@@ -118,6 +122,7 @@ const scenes: SceneConfig[] = [
     id: "scene-3",
     name: "Processing Floor",
     site: "Broken Hill Processing",
+    siteId: "site-broken-hill",
     panoramaType: "industrial",
     captured: "3 hours ago",
     hotspots: [
@@ -169,6 +174,7 @@ const scenes: SceneConfig[] = [
     id: "scene-4",
     name: "Tank Farm",
     site: "Darwin LNG Terminal",
+    siteId: "site-darwin",
     panoramaType: "outdoor",
     captured: "5 hours ago",
     hotspots: [
@@ -199,6 +205,7 @@ const scenes: SceneConfig[] = [
     id: "scene-5",
     name: "Pump Station",
     site: "Broken Hill Processing",
+    siteId: "site-broken-hill",
     panoramaType: "pump-station",
     captured: "12 hours ago",
     hotspots: [
@@ -230,15 +237,21 @@ export default function ViewerPage() {
 
 function ViewerPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const siteFilter = searchParams.get("site");
 
   // Filter scenes to those matching the site param, or show all
-  const filteredScenes = useMemo(() => {
-    if (!siteFilter) return scenes;
-    const matched = scenes.filter((s) =>
-      s.site.toLowerCase().includes(siteFilter.toLowerCase())
+  const { filteredScenes, hasMatchedFilter } = useMemo(() => {
+    if (!siteFilter) return { filteredScenes: scenes, hasMatchedFilter: false };
+    // Match by siteId first (e.g., "site-broken-hill"), then fall back to site name
+    const matched = scenes.filter(
+      (s) =>
+        s.siteId === siteFilter ||
+        s.site.toLowerCase().includes(siteFilter.toLowerCase())
     );
-    return matched.length > 0 ? matched : scenes;
+    return matched.length > 0
+      ? { filteredScenes: matched, hasMatchedFilter: true }
+      : { filteredScenes: scenes, hasMatchedFilter: false };
   }, [siteFilter]);
 
   const [activeScene, setActiveScene] = useState(0);
@@ -365,6 +378,48 @@ function ViewerPageContent() {
             <StatusBadge status="info" label={`${filteredScenes.length} Scenes`} />
           }
         />
+
+        {/* Site context banner */}
+        {siteFilter && hasMatchedFilter && (
+          <div
+            data-testid="viewer-site-context"
+            className="flex items-center justify-between px-4 py-2.5 rounded-lg border border-magenta/20 bg-magenta/5"
+          >
+            <p className="text-sm text-[var(--nav-text-secondary)]">
+              Showing scenes for{" "}
+              <span className="font-semibold text-magenta">
+                {filteredScenes[0]?.site}
+              </span>
+            </p>
+            <button
+              onClick={() => router.push("/viewer")}
+              data-testid="viewer-site-context-clear"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs text-[var(--nav-text-muted)] hover:text-[var(--nav-text-secondary)] hover:bg-[var(--nav-bg-hover)] transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Show All
+            </button>
+          </div>
+        )}
+
+        {/* Fallback when site filter matches no scenes */}
+        {siteFilter && !hasMatchedFilter && (
+          <div
+            data-testid="viewer-no-scenes"
+            className="flex items-center justify-between px-4 py-2.5 rounded-lg border border-amber/20 bg-amber/5"
+          >
+            <p className="text-sm text-[var(--nav-text-secondary)]">
+              No 360° scenes available for this site. Showing all scenes.
+            </p>
+            <button
+              onClick={() => router.push("/viewer")}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs text-[var(--nav-text-muted)] hover:text-[var(--nav-text-secondary)] hover:bg-[var(--nav-bg-hover)] transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-4 flex-1 min-h-0">
           {/* Main viewer */}

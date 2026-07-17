@@ -18,8 +18,10 @@ import {
   Grid2x2,
   Rows3,
   RefreshCw,
+  X,
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 // Fallback mock feeds for when the DB is unreachable
 const mockFeeds: FeedItem[] = [
@@ -348,6 +350,18 @@ function FeedTile({
 }
 
 export default function FeedsPage() {
+  return (
+    <Suspense>
+      <FeedsPageContent />
+    </Suspense>
+  );
+}
+
+function FeedsPageContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const siteFilter = searchParams.get("site");
+
   const [layout, setLayout] = useState<GridLayout>("3x3");
   const { feeds: dbFeeds, isLoading, error, refetch } = useCameraFeeds();
 
@@ -359,7 +373,49 @@ export default function FeedsPage() {
         ? dbFeeds.map(dbFeedToFeedItem)
         : mockFeeds;
 
+  // Derive the site name from DB feeds matching the siteId filter
+  const filteredSiteName = useMemo(() => {
+    if (!siteFilter) return null;
+    const dbFeed = dbFeeds.find((f) => f.siteId === siteFilter);
+    if (dbFeed) return dbFeed.siteName;
+    // Fallback: check mock feeds by site name partial match
+    const mockFeed = mockFeeds.find((f) =>
+      f.site.toLowerCase().includes(siteFilter.toLowerCase())
+    );
+    return mockFeed?.site ?? null;
+  }, [siteFilter, dbFeeds]);
+
+  // Split feeds into site-specific and other when filtering
+  const { siteFeeds, otherFeeds } = useMemo(() => {
+    if (!siteFilter) return { siteFeeds: feeds, otherFeeds: [] };
+
+    const site: FeedItem[] = [];
+    const other: FeedItem[] = [];
+
+    // Check against DB feed siteIds first
+    const dbSiteIds = new Set(
+      dbFeeds.filter((f) => f.siteId === siteFilter).map((f) => f.id)
+    );
+
+    for (const feed of feeds) {
+      if (dbSiteIds.has(feed.id)) {
+        site.push(feed);
+      } else if (dbSiteIds.size === 0 && feed.site.toLowerCase().includes(siteFilter.toLowerCase())) {
+        // Fallback for mock feeds: match by site name
+        site.push(feed);
+      } else {
+        other.push(feed);
+      }
+    }
+
+    return { siteFeeds: site, otherFeeds: other };
+  }, [siteFilter, feeds, dbFeeds]);
+
   const liveCount = feeds.filter((f) => f.status === "live").length;
+
+  const handleClearFilter = useCallback(() => {
+    router.push("/feeds");
+  }, [router]);
 
   const gridClasses: Record<GridLayout, string> = {
     "2x2": "grid grid-cols-1 md:grid-cols-2 gap-4",
@@ -412,6 +468,27 @@ export default function FeedsPage() {
           }
         />
 
+        {/* Site context banner */}
+        {siteFilter && filteredSiteName && (
+          <div
+            data-testid="feeds-site-context"
+            className="flex items-center justify-between px-4 py-2.5 rounded-lg border border-cyan/20 bg-cyan/5"
+          >
+            <p className="text-sm text-[var(--nav-text-secondary)]">
+              Showing cameras for{" "}
+              <span className="font-semibold text-cyan">{filteredSiteName}</span>
+            </p>
+            <button
+              onClick={handleClearFilter}
+              data-testid="feeds-site-context-clear"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs text-[var(--nav-text-muted)] hover:text-[var(--nav-text-secondary)] hover:bg-[var(--nav-bg-hover)] transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Show All
+            </button>
+          </div>
+        )}
+
         {isLoading ? (
           <div data-testid="feeds-grid-skeleton" className={gridClasses[layout]}>
             {Array.from({ length: 9 }).map((_, i) => (
@@ -427,6 +504,57 @@ export default function FeedsPage() {
               </div>
             ))}
           </div>
+        ) : siteFilter ? (
+          <>
+            {/* Site-specific cameras */}
+            {siteFeeds.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold text-[var(--nav-text-muted)] uppercase tracking-wider mb-3">
+                  {filteredSiteName ?? "Site"} Cameras ({siteFeeds.length})
+                </h2>
+                <div data-testid="feeds-grid" className={gridClasses[layout]}>
+                  {siteFeeds.map((feed, i) => (
+                    <FeedTile key={feed.id} feed={feed} index={i} layout={layout} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Other cameras (dimmed) */}
+            {otherFeeds.length > 0 && (
+              <div className="opacity-50 hover:opacity-80 transition-opacity duration-300">
+                <h2 className="text-xs font-semibold text-[var(--nav-text-muted)] uppercase tracking-wider mb-3">
+                  Other Cameras ({otherFeeds.length})
+                </h2>
+                <div data-testid="feeds-grid-other" className={gridClasses[layout]}>
+                  {otherFeeds.map((feed, i) => (
+                    <FeedTile
+                      key={feed.id}
+                      feed={feed}
+                      index={i}
+                      layout={layout}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No cameras for this site */}
+            {siteFeeds.length === 0 && (
+              <div className="text-center py-12">
+                <Camera className="w-8 h-8 text-[var(--nav-text-muted)] mx-auto mb-3" />
+                <p className="text-sm text-[var(--nav-text-muted)]">
+                  No cameras found for this site
+                </p>
+                <button
+                  onClick={handleClearFilter}
+                  className="mt-3 text-xs text-cyan hover:text-cyan/80 transition-colors"
+                >
+                  Show all cameras
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div data-testid="feeds-grid" className={gridClasses[layout]}>
             {feeds.map((feed, i) => (
