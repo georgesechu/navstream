@@ -12,6 +12,9 @@ const PUBLIC_PREFIXES = [
   "/logo.svg",
   "/favicon.ico",
   "/floor-plans/",
+  "/manifest",
+  "/sw.js",
+  "/field/",
 ];
 
 function isPublicPath(pathname: string): boolean {
