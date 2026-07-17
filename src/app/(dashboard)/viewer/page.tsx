@@ -51,6 +51,8 @@ interface SceneConfig {
   site: string;
   siteId: string;
   panoramaType: PanoramaScene;
+  /** Optional real equirectangular image URL — overrides procedural panorama */
+  imageUrl?: string;
   hotspots: PanoramaHotspot[];
   captured: string;
 }
@@ -62,6 +64,7 @@ const scenes: SceneConfig[] = [
     site: "Kalgoorlie Gold Mine",
     siteId: "site-kalgoorlie",
     panoramaType: "control-room",
+    imageUrl: "/panoramas/office-hall.jpg",
     captured: "2 hours ago",
     hotspots: [
       {
@@ -100,6 +103,7 @@ const scenes: SceneConfig[] = [
     site: "Kalgoorlie Gold Mine",
     siteId: "site-kalgoorlie",
     panoramaType: "industrial",
+    imageUrl: "/panoramas/abandoned-plant.jpg",
     captured: "1 day ago",
     hotspots: [
       {
@@ -124,6 +128,7 @@ const scenes: SceneConfig[] = [
     site: "Broken Hill Processing",
     siteId: "site-broken-hill",
     panoramaType: "industrial",
+    imageUrl: "/panoramas/printing-facility.jpg",
     captured: "3 hours ago",
     hotspots: [
       {
@@ -176,6 +181,7 @@ const scenes: SceneConfig[] = [
     site: "Darwin LNG Terminal",
     siteId: "site-darwin",
     panoramaType: "outdoor",
+    imageUrl: "/panoramas/dolomites.jpg",
     captured: "5 hours ago",
     hotspots: [
       {
@@ -207,6 +213,7 @@ const scenes: SceneConfig[] = [
     site: "Broken Hill Processing",
     siteId: "site-broken-hill",
     panoramaType: "pump-station",
+    imageUrl: "/panoramas/machinery-room.jpg",
     captured: "12 hours ago",
     hotspots: [
       {
@@ -277,7 +284,8 @@ function ViewerPageContent() {
     });
   }, []);
 
-  const currentImageUrl = panoramaUrls[scene.panoramaType];
+  // Prefer real image URL over procedural panorama
+  const currentImageUrl = scene.imageUrl || panoramaUrls[scene.panoramaType];
 
   const currentHotspots = useMemo(
     () => (showHotspots ? scene.hotspots : []),

@@ -526,7 +526,7 @@ Each sprint ends with a **gate** — a set of checks that must pass before movin
 - [x] **Claude API integration** — AI chat with Claude API (falls back to smart keyword-based mock responses when no API key). System prompt positions as industrial diagnostics expert. Context-aware via URL params
 - [x] **AI work order generation** — "Generate work order" → returns structured JSON → rendered as formatted work order card → "Save" button creates real work order in DB via `/api/work-orders` POST
 - [ ] **Session recording** — LiveKit composite recording stored to S3/local volume. Playback in session history
-- [x] **Instant Field Terminal (QR device pairing)** — device management API, QR code generation, field terminal mobile page with camera/GPS. Devices dashboard page with create/delete/QR modal
+- [x] **Instant Field Terminal (QR device pairing)** — device management API, QR code generation, field terminal mobile page with camera/GPS. Devices dashboard page with create/delete/QR modal. Camera feed relay via server-side JPEG snapshots (temporary — needs proper WebRTC SFU like LiveKit for production)
 
 **Gate 4:**
 - [x] Video call works between two browser tabs (simulating back-office ↔ field) — browser WebRTC with signaling API
